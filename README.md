@@ -1,2 +1,2 @@
 # Software_group6
-23级软件工程大作业第六组
+EBU5304-Software Engineering Group Project-Group6
