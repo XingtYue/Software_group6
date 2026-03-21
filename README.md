@@ -7,8 +7,11 @@ EBU5304-Software Engineering Group Project-Group6
 |-----|-----|-----|-----|-----|
 | 1 | XingtYue| Xingtong Yue | 231220493 | Group Leader |
 | 2 | 3qian05| Wenqian Zhao | 231222730 | Group Member |
-| 3 | 3qian05| Shuying Ao | 231221478 | Group Member |
-
+| 3 | aoshuying64-maker| Shuying Ao | 231221478 | Group Member |
+| 4 | qxio633| Xiaoyun Qu | 231220024 | Group Member |
+| 5 | hwiiins| Jiahang Li | 231220323 | Group Member |
+| 6 | wuudy1341| Weichao Zhao | 210979701 | Group Member |
+| 7 | danghaoyu5-hash| Haoyu Dang | 2312220758 | Group Member |
 ## Project Overview
 
 This project is a software application developed for BUPT International School to streamline the Teaching Assistant (TA) recruitment process. The system replaces the current manual workflow (forms and Excel files) with a digital platform that supports three user roles: TA (Applicant), Module Organiser (MO), and Admin.
