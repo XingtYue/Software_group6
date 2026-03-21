@@ -35,10 +35,18 @@ Select and manage applicants
 
 View overall TA workload
 Manage system-wide settings (if applicable)
-AI-Powered Features (Planned)
+### AI-Powered Features (Planned)
 
 Skill matching between jobs and applicants
 Identify missing skills for applicants
 Workload balancing recommendations
+
+## Technology Stack
+
+Language: Java (to be confirmed)
+Architecture: Standalone Java application / Java Servlet/JSP web application
+Data Storage: Text file formats (CSV / JSON / XML)
+Version Control: Git / GitHub
+Development Methodology: Agile (Scrum)
 
 
