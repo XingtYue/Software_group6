@@ -4,7 +4,7 @@ EBU5304-Software Engineering Group Project-Group6
 ## Group Member
 
 | number | ID | name | QM ID | role | 
-|-----|-----|-----|-----|-----|-----|
+|-----|-----|-----|-----|-----|
 | 1 | XingtYue| Xingtong Yue | 231220493 | Group Leader |
 | 2 | 3qian05| Wenqian Zhao | 231222730 | Group Member |
 | 3 | 3qian05| Shuying Ao | 231221478 | Group Member |
