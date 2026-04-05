@@ -38,7 +38,7 @@
 
       <%
         Map<String,Object> job = (Map<String,Object>) request.getAttribute("job");
-        if (job == null) { job = new java.util.HashMap<>(); }
+        if (job == null) { job = new java.util.HashMap<String, Object>(); }
         String jobId = (String) request.getAttribute("jobId");
         if (jobId == null) jobId = "1";
         List<String> requirements = (List<String>) job.get("requirements");
