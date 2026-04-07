@@ -42,12 +42,19 @@
             <input class="search-input" type="search" id="userSearch"
                    placeholder="Search users by name, email, or role..."
                    oninput="filterUsers(this.value)">
-            <div class="filter-group">
-              <button class="btn btn-primary btn-sm" onclick="setFilter('all',this)">All Users</button>
-              <button class="btn btn-outline btn-sm" onclick="setFilter('ta',this)">TA</button>
-              <button class="btn btn-outline btn-sm" onclick="setFilter('mo',this)">MO</button>
-              <button class="btn btn-outline btn-sm" onclick="setFilter('admin',this)">Admin</button>
-            </div>
+             <div class="filter-group" style="display: flex; flex-direction: column; gap: 8px; align-items: flex-start;">
+               <div id="role-filter-row">
+                 <button class="btn btn-primary btn-sm" id="role-all" onclick="setRoleFilter('all')">All Users</button>
+                 <button class="btn btn-outline btn-sm" id="role-ta" onclick="setRoleFilter('ta')">TA</button>
+                 <button class="btn btn-outline btn-sm" id="role-mo" onclick="setRoleFilter('mo')">MO</button>
+                 <button class="btn btn-outline btn-sm" id="role-admin" onclick="setRoleFilter('admin')">Admin</button>
+               </div>
+               <div id="status-filter-row">
+                 <button class="btn btn-primary btn-sm" id="status-all" onclick="setStatusFilter('all')">All</button>
+                 <button class="btn btn-outline btn-sm" id="status-active" onclick="setStatusFilter('active')">Active</button>
+                 <button class="btn btn-outline btn-sm" id="status-inactive" onclick="setStatusFilter('inactive')">Inactive</button>
+               </div>
+             </div>
           </div>
         </div>
 
@@ -143,21 +150,44 @@
 </div>
 
 <script>
-var currentFilter = 'all';
-function setFilter(role, btn) {
-  currentFilter = role;
-  document.querySelectorAll('.filter-group .btn').forEach(function(b){ b.className = 'btn btn-outline btn-sm'; });
-  btn.className = 'btn btn-primary btn-sm';
-  filterUsers(document.getElementById('userSearch').value);
+// 获取当前URL参数
+function getQueryParam(name) {
+  var url = new URL(window.location.href);
+  return url.searchParams.get(name);
 }
-function filterUsers(query) {
-  var q = query.toLowerCase();
-  document.querySelectorAll('.user-row').forEach(function(row) {
-    var matchRole = currentFilter === 'all' || row.dataset.role === currentFilter;
-    var matchQuery = !q || row.dataset.name.includes(q) || row.dataset.email.includes(q);
-    row.style.display = (matchRole && matchQuery) ? '' : 'none';
+var currentRole = getQueryParam('role') || 'all';
+var currentStatus = getQueryParam('status') || 'all';
+
+function setRoleFilter(role) {
+  var status = currentStatus;
+  // 保持当前status参数，不自动切换
+  var url = new URL(window.location.href);
+  url.searchParams.set('role', role);
+  url.searchParams.set('status', status);
+  window.location.href = url.pathname + '?role=' + role + '&status=' + status;
+}
+function setStatusFilter(status) {
+  var role = currentRole;
+  // 允许All Users时也能点状态
+  var url = new URL(window.location.href);
+  url.searchParams.set('role', role);
+  url.searchParams.set('status', status);
+  window.location.href = url.pathname + '?role=' + role + '&status=' + status;
+}
+// 按钮高亮
+window.onload = function() {
+  // 角色按钮高亮
+  ['all','ta','mo','admin'].forEach(function(r){
+    var btn = document.getElementById('role-' + r);
+    if (btn) btn.className = (currentRole === r ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm');
   });
-}
+  // 状态按钮高亮
+  ['all','active','inactive'].forEach(function(s){
+    var btn = document.getElementById('status-' + s);
+    if (btn) btn.className = (currentStatus === s ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm');
+  });
+  // 状态按钮始终显示，无需隐藏
+};
 </script>
 </body>
 </html>
