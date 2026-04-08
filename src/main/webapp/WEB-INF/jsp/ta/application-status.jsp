@@ -10,26 +10,12 @@
 </head>
 <body>
 <div class="page-wrapper">
-  <header class="site-header">
-    <div class="header-inner">
-      <div class="header-left">
-        <span class="site-title">TA Portal</span>
-        <nav>
-          <a href="${pageContext.request.contextPath}/ta/jobs" class="nav-link">Browse Jobs</a>
-          <a href="${pageContext.request.contextPath}/ta/applications" class="nav-link active">My Applications</a>
-        </nav>
-      </div>
-      <div class="header-right">
-        <a href="${pageContext.request.contextPath}/ta/profile" class="btn-icon" title="Profile">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-          </svg>
-        </a>
-        <a href="${pageContext.request.contextPath}/logout" class="btn btn-outline btn-sm">Logout</a>
-      </div>
-    </div>
-  </header>
+  <%@ include file="taheader.jsp" %>
 
+  <div class="nav-main-row">
+    <a href="${pageContext.request.contextPath}/ta/jobs" class="nav-link">Browse Jobs</a>
+             <a href="${pageContext.request.contextPath}/ta/applications" class="nav-link active">My Applications</a>
+  </div>
   <main class="main-content">
     <div class="content-with-sidebar">
       <div class="content-area">

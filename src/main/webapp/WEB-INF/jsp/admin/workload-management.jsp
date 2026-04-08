@@ -10,28 +10,13 @@
 </head>
 <body>
 <div class="page-wrapper">
-  <header class="site-header">
-    <div class="header-inner">
-      <div class="header-left">
-        <span class="site-title">Admin Portal</span>
-        <nav>
-          <a href="${pageContext.request.contextPath}/admin" class="nav-link">User Management</a>
-          <a href="${pageContext.request.contextPath}/admin/jobs" class="nav-link">Job Management</a>
-          <a href="${pageContext.request.contextPath}/admin/applications" class="nav-link">Application Management</a>
-          <a href="${pageContext.request.contextPath}/admin/workload" class="nav-link active">Workload Management</a>
-        </nav>
-      </div>
-      <div class="header-right">
-        <a href="${pageContext.request.contextPath}/admin/profile" class="btn-icon" title="Profile">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-          </svg>
-        </a>
-        <a href="${pageContext.request.contextPath}/logout" class="btn btn-outline btn-sm">Logout</a>
-      </div>
-    </div>
-  </header>
-
+ <%@ include file="adminheader.jsp" %>
+ <div class="nav-main-row">
+   <a href="${pageContext.request.contextPath}/admin" class="nav-link">User Management</a>
+   <a href="${pageContext.request.contextPath}/admin/jobs" class="nav-link">Job Management</a>
+   <a href="${pageContext.request.contextPath}/admin/applications" class="nav-link">Application Management</a>
+   <a href="${pageContext.request.contextPath}/admin/workload" class="nav-link active">Workload Management</a>
+ </div>
   <main class="main-content">
     <div class="content-with-sidebar">
       <div class="content-area">
@@ -53,6 +38,7 @@
                       <th>Accepted Positions</th>
                       <th>Total Hours/Week</th>
                       <th>Workload Status</th>
+                      <th>Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -64,8 +50,10 @@
                           try { hours = Integer.parseInt(wl.getOrDefault("totalHours","0")); } catch(Exception e){}
                           String wlStatus = hours > 15 ? "Overloaded" : hours > 8 ? "Normal" : "Light";
                           String wlClass = hours > 15 ? "badge-rejected" : hours > 8 ? "badge-accepted" : "badge-pending";
+                          boolean isInactive = "inactive".equals(wl.get("status"));
                     %>
-                    <tr>
+
+                    <tr style="<%= isInactive ? "opacity:0.5; background:#f9f9f9;" : "" %>">
                       <td><%= wl.getOrDefault("name","Unknown") %></td>
                       <td style="text-align:center;"><%= wl.getOrDefault("positions","0") %></td>
                       <td style="text-align:center;">
@@ -77,6 +65,15 @@
                         </div>
                       </td>
                       <td><span class="badge <%= wlClass %>"><%= wlStatus %></span></td>
+                      <td>
+                        <% if (!isInactive) { %>
+                          <a href="${pageContext.request.contextPath}/admin/workload/edit/<%= wl.get("id") %>" class="btn btn-outline btn-sm">
+                            Edit Workload
+                          </a>
+                        <% } else { %>
+                          <button class="btn btn-outline btn-sm" disabled>Edit Disabled</button>
+                        <% } %>
+                      </td>
                     </tr>
                     <%
                         }
@@ -90,24 +87,23 @@
         </div>
       </div>
 
-      <!-- Sidebar -->
       <div class="sidebar">
         <p class="sidebar-title">WORKLOAD SUMMARY</p>
         <div class="stat-card">
           <p class="stat-label">Total TAs</p>
-          <p class="stat-value">${totalTAs != null ? totalTAs : 5}</p>
+          <p class="stat-value">${totalTAs}</p>
         </div>
         <div class="stat-card green">
           <p class="stat-label">Normal Workload</p>
-          <p class="stat-value green">${normalCount != null ? normalCount : 3}</p>
+          <p class="stat-value green">${normalCount}</p>
         </div>
         <div class="stat-card red">
           <p class="stat-label">Overloaded</p>
-          <p class="stat-value red">${overloadedCount != null ? overloadedCount : 1}</p>
+          <p class="stat-value red">${overloadedCount}</p>
         </div>
         <div class="stat-card">
           <p class="stat-label">Light Workload</p>
-          <p class="stat-value">${lightCount != null ? lightCount : 1}</p>
+          <p class="stat-value">${lightCount}</p>
         </div>
       </div>
     </div>

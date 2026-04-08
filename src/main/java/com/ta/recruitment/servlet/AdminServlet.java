@@ -121,6 +121,18 @@ public class AdminServlet extends HttpServlet {
             req.setAttribute("lightCount", light);
             req.getRequestDispatcher("/WEB-INF/jsp/admin/workload-management.jsp").forward(req, resp);
 
+        } else if (path.startsWith("/workload/edit/")) {
+            String taId = path.substring("/workload/edit/".length());
+            User ta = DataStore.getInstance().findUserById(taId);
+
+            if (ta == null) {
+                resp.sendRedirect(req.getContextPath() + "/admin/workload");
+                return;
+            }
+
+            req.setAttribute("ta", ta);
+            req.getRequestDispatcher("/WEB-INF/jsp/admin/edit-workload.jsp").forward(req, resp);
+
         } else if (path.equals("/profile") || path.equals("/profile/")) {
             String userId = (String) req.getSession().getAttribute("userId");
             User user = ds.findUserById(userId);
@@ -167,6 +179,20 @@ public class AdminServlet extends HttpServlet {
                 else if ("activate".equals(action)) ds.setUserStatus(userId, "active");
             }
             resp.sendRedirect(req.getContextPath() + "/admin");
+
+        } else if (path.startsWith("/workload/save")) {
+            String taId = req.getParameter("taId");
+            String hoursStr = req.getParameter("hours");
+            User ta = ds.findUserById(taId);
+
+            if (ta != null && hoursStr != null && !hoursStr.trim().isEmpty()) {
+                try {
+                    int newHours = Integer.parseInt(hoursStr.trim());
+                    ta.setWorkload(newHours);
+                    ds.updateUser(ta);
+                } catch (NumberFormatException e) {}
+            }
+            resp.sendRedirect(req.getContextPath() + "/admin/workload");
 
         } else {
             resp.sendRedirect(req.getContextPath() + "/admin");

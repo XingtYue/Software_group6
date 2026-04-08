@@ -10,26 +10,12 @@
 </head>
 <body>
 <div class="page-wrapper">
-  <header class="site-header">
-    <div class="header-inner">
-      <div class="header-left">
-        <span class="site-title">TA Portal</span>
-        <nav>
-          <a href="${pageContext.request.contextPath}/ta/jobs" class="nav-link active">Browse Jobs</a>
-          <a href="${pageContext.request.contextPath}/ta/applications" class="nav-link">My Applications</a>
-        </nav>
-      </div>
-      <div class="header-right">
-        <a href="${pageContext.request.contextPath}/ta/profile" class="btn-icon" title="Profile">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-          </svg>
-        </a>
-        <a href="${pageContext.request.contextPath}/logout" class="btn btn-outline btn-sm">Logout</a>
-      </div>
-    </div>
-  </header>
+ <%@ include file="taheader.jsp" %>
 
+   <div class="nav-main-row">
+     <a href="${pageContext.request.contextPath}/ta/jobs" class="nav-link active">Browse Jobs</a>
+              <a href="${pageContext.request.contextPath}/ta/applications" class="nav-link">My Applications</a>
+   </div>
   <main class="main-content" style="overflow-y:auto;">
     <div style="max-width:800px;margin:0 auto;padding:24px;">
       <a href="${pageContext.request.contextPath}/ta/jobs" class="btn btn-outline btn-sm mb-6">
@@ -79,7 +65,7 @@
         </div>
 
         <div class="pt-4" style="border-top:1px solid #e5e7eb;margin-top:8px;">
-          <a href="${pageContext.request.contextPath}/ta/jobs/<%= jobId %>/apply"
+          <a href="${pageContext.request.contextPath}/ta/apply/<%= jobId %>"
              class="btn btn-primary">Apply for This Position</a>
         </div>
       </div>
