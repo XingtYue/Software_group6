@@ -5,6 +5,7 @@ import java.util.List;
 
 public class Job {
     private String id;
+    private String jobId;
     private String title;
     private String description;
     private String department;
@@ -24,6 +25,9 @@ public class Job {
 
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
+
+    public String getJobId() { return jobId; }
+    public void setJobId(String jobId) { this.jobId = jobId; }
 
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }
