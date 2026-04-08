@@ -19,7 +19,8 @@ public class DataStore {
     private List<Job> jobs = new ArrayList<>();
     private List<Application> applications = new ArrayList<>();
 
-    private DataStore() {}
+    private DataStore() {
+    }
 
     public static synchronized DataStore getInstance() {
         if (instance == null) {
@@ -189,8 +190,16 @@ public class DataStore {
         return null;
     }
 
+    public Job findJobByJobId(String id) {
+        for (Job j : jobs) {
+            if (id != null && id.equals(j.getJobId())) return j;
+        }
+        return null;
+    }
+
     public void addJob(Job job) {
         job.setId(generateId());
+        job.setJobId(String.valueOf(jobs.size() + 1));
         job.setPostedDate(today());
         jobs.add(job);
         saveJobs();
@@ -200,6 +209,14 @@ public class DataStore {
         Job j = findJobById(jobId);
         if (j != null) {
             j.setStatus("closed");
+            saveJobs();
+        }
+    }
+
+    public void openJob(String jobId) {
+        Job j = findJobById(jobId);
+        if (j != null) {
+            j.setStatus("active");
             saveJobs();
         }
     }
@@ -256,32 +273,39 @@ public class DataStore {
     }
 
     // ==================== WORKLOAD ====================
-
     public List<Map<String,String>> getWorkloadData() {
         List<Map<String,String>> result = new ArrayList<>();
         List<User> tas = getUsersByRole("ta");
 
         for (User ta : tas) {
             int totalHours = ta.getWorkload();
-            if (totalHours == 0) {
-                List<Application> accepted = new ArrayList<>();
-                for (Application a : applications) {
-                    if (ta.getId().equals(a.getTaId()) && "accepted".equals(a.getStatus())) {
-                        accepted.add(a);
-                    }
-                }
-                for (Application a : accepted) {
-                    Job j = findJobById(a.getJobId());
-                    if (j != null && j.getHours() != null) {
-                        try {
-                            String h = j.getHours().replaceAll("[^0-9]", "");
-                            if (!h.isEmpty()) totalHours += Integer.parseInt(h);
-                        } catch (Exception ignored) {}
-                    }
+            List<Application> accepted = new ArrayList<>();
+
+            // 找出已录取的申请
+            for (Application a : applications) {
+                if (ta.getId().equals(a.getTaId()) && "accepted".equals(a.getStatus())) {
+                    accepted.add(a);
                 }
             }
 
-            Map<String,String> m = new LinkedHashMap<>();
+            // 计算工时
+            for (Application a : accepted) {
+                Job j = findJobByJobId(a.getJobId());
+                if (j != null && j.getHours() != null) {
+                    try {
+                        String h = j.getHours().replaceAll("[^0-9]", "");
+                        if (!h.isEmpty()) {
+                            if(totalHours==0)  totalHours += Integer.parseInt(h);
+                        }
+                    } catch (Exception ignored) {}
+                }
+            }
+
+            // 保存工时
+            ta.setWorkload(totalHours);
+
+            // 把当前 TA 加入结果
+            Map<String, String> m = new LinkedHashMap<>();
             m.put("id", ta.getId());
             m.put("name", ta.getName());
             m.put("positions", String.valueOf(countAcceptedPositions(ta.getId())));
@@ -289,20 +313,22 @@ public class DataStore {
             m.put("status", ta.getStatus());
             result.add(m);
         }
+
+        // 排序
         result.sort((A, B) -> {
             boolean aActive = "active".equals(A.get("status"));
             boolean bActive = "active".equals(B.get("status"));
-
             if (aActive && !bActive) return -1;
             if (!aActive && bActive) return 1;
-
             int hA = Integer.parseInt(A.get("totalHours"));
             int hB = Integer.parseInt(B.get("totalHours"));
             return Integer.compare(hB, hA);
         });
 
-        return result;
+        saveUsers();
+        return result; // ✅ 正确位置
     }
+
     private int countAcceptedPositions(String taId) {
         int count = 0;
         for (Application a : applications) {
@@ -411,7 +437,8 @@ public class DataStore {
             sb.append("\"role\":\"").append(esc(u.getRole())).append("\",");
             sb.append("\"status\":\"").append(esc(u.getStatus() != null ? u.getStatus() : "active")).append("\",");
             sb.append("\"department\":\"").append(esc(u.getDepartment() != null ? u.getDepartment() : "")).append("\",");
-            sb.append("\"phone\":\"").append(esc(u.getPhone() != null ? u.getPhone() : "")).append("\"");
+            sb.append("\"phone\":\"").append(esc(u.getPhone() != null ? u.getPhone() : "")).append("\",");
+            sb.append("\"workload\":\"").append(esc(String.valueOf(u.getWorkload()))).append("\"");
             sb.append("}");
             if (i < users.size() - 1) sb.append(",");
             sb.append("\n");
@@ -426,6 +453,7 @@ public class DataStore {
             Job j = jobs.get(i);
             sb.append("  {");
             sb.append("\"id\":\"").append(esc(j.getId())).append("\",");
+            sb.append("\"jobId\":\"").append(esc(j.getJobId())).append("\",");
             sb.append("\"title\":\"").append(esc(j.getTitle())).append("\",");
             sb.append("\"description\":\"").append(esc(j.getDescription() != null ? j.getDescription() : "")).append("\",");
             sb.append("\"department\":\"").append(esc(j.getDepartment() != null ? j.getDepartment() : "")).append("\",");
@@ -489,6 +517,7 @@ public class DataStore {
             u.setStatus(r.getOrDefault("status","active"));
             u.setDepartment(r.get("department"));
             u.setPhone(r.get("phone"));
+            u.setWorkload(Integer.parseInt(r.get("totalHours")));
             list.add(u);
         }
         return list;
@@ -504,6 +533,7 @@ public class DataStore {
             Map<String,String> r = parseSimpleObject(obj);
             Job j = new Job();
             j.setId(r.get("id"));
+            j.setJobId(r.get("jobId"));
             j.setTitle(r.get("title"));
             j.setDescription(r.get("description"));
             j.setDepartment(r.get("department"));

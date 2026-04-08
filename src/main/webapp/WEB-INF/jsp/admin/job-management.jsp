@@ -73,6 +73,14 @@
                               onclick="return confirm('Close this job posting?')">Close Job</button>
                     </form>
                   <% } %>
+                  <% if ("closed".equals(status)) { %>
+                  <form action="${pageContext.request.contextPath}/admin/jobs/action" method="post" style="display:inline;">
+                    <input type="hidden" name="jobId" value="<%= job.get("id") %>">
+                    <input type="hidden" name="action" value="activate">
+                    <button type="submit" class="btn btn-outline-green btn-sm"
+                            onclick="return confirm('Activate this job posting?')">Activate</button>
+                  </form>
+                  <% } %>
                 </div>
               </div>
             </div>

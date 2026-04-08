@@ -159,6 +159,9 @@ public class AdminServlet extends HttpServlet {
             if ("close".equals(action) && jobId != null) {
                 ds.closeJob(jobId);
             }
+            else if ("activate".equals(action) && jobId != null) {
+                ds.openJob(jobId);
+            }
             resp.sendRedirect(req.getContextPath() + "/admin/jobs");
 
         } else if (path.equals("/applications/action") || path.equals("/applications/action/")) {
