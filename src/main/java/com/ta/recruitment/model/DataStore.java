@@ -260,33 +260,58 @@ public class DataStore {
     public List<Map<String,String>> getWorkloadData() {
         List<Map<String,String>> result = new ArrayList<>();
         List<User> tas = getUsersByRole("ta");
+
         for (User ta : tas) {
-            List<Application> accepted = new ArrayList<>();
-            for (Application a : applications) {
-                if (ta.getId().equals(a.getTaId()) && "accepted".equals(a.getStatus())) {
-                    accepted.add(a);
+            int totalHours = ta.getWorkload();
+            if (totalHours == 0) {
+                List<Application> accepted = new ArrayList<>();
+                for (Application a : applications) {
+                    if (ta.getId().equals(a.getTaId()) && "accepted".equals(a.getStatus())) {
+                        accepted.add(a);
+                    }
+                }
+                for (Application a : accepted) {
+                    Job j = findJobById(a.getJobId());
+                    if (j != null && j.getHours() != null) {
+                        try {
+                            String h = j.getHours().replaceAll("[^0-9]", "");
+                            if (!h.isEmpty()) totalHours += Integer.parseInt(h);
+                        } catch (Exception ignored) {}
+                    }
                 }
             }
-            int totalHours = 0;
-            for (Application a : accepted) {
-                Job j = findJobById(a.getJobId());
-                if (j != null && j.getHours() != null) {
-                    try {
-                        String h = j.getHours().replaceAll("[^0-9]", "");
-                        if (!h.isEmpty()) totalHours += Integer.parseInt(h);
-                    } catch (Exception ignored) {}
-                }
-            }
+
             Map<String,String> m = new LinkedHashMap<>();
             m.put("id", ta.getId());
             m.put("name", ta.getName());
-            m.put("positions", String.valueOf(accepted.size()));
+            m.put("positions", String.valueOf(countAcceptedPositions(ta.getId())));
             m.put("totalHours", String.valueOf(totalHours));
+            m.put("status", ta.getStatus());
             result.add(m);
         }
+        result.sort((A, B) -> {
+            boolean aActive = "active".equals(A.get("status"));
+            boolean bActive = "active".equals(B.get("status"));
+
+            if (aActive && !bActive) return -1;
+            if (!aActive && bActive) return 1;
+
+            int hA = Integer.parseInt(A.get("totalHours"));
+            int hB = Integer.parseInt(B.get("totalHours"));
+            return Integer.compare(hB, hA);
+        });
+
         return result;
     }
-
+    private int countAcceptedPositions(String taId) {
+        int count = 0;
+        for (Application a : applications) {
+            if (taId.equals(a.getTaId()) && "accepted".equals(a.getStatus())) {
+                count++;
+            }
+        }
+        return count;
+    }
     // ==================== SEED DATA ====================
 
     private void seedUsers() {

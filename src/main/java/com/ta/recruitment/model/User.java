@@ -12,7 +12,7 @@ public class User implements Serializable {
     private String department;
     private String status; // "active", "inactive"
     private String cvFileName;
-
+    private int workload = 0;
     public User() {}
 
     public User(String id, String name, String email, String password, String role) {
@@ -52,6 +52,8 @@ public class User implements Serializable {
     public String getCvFileName() { return cvFileName; }
     public void setCvFileName(String cvFileName) { this.cvFileName = cvFileName; }
 
+    public int getWorkload() {return workload;}
+    public void setWorkload(int workload) {this.workload = workload;}
     public java.util.Map<String,String> toMap() {
         java.util.Map<String,String> m = new java.util.LinkedHashMap<>();
         m.put("id", id);

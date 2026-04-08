@@ -6,10 +6,29 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login - TA Recruitment System</title>
   <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
+    <style>
+      .login-header {
+        position: relative;
+       min-height: 40px;
+       margin-bottom: 10px;
+      }
+      .school-logo {
+        position: absolute;
+        top: -20px;
+        left: -15px;
+        height: 60px;
+        width: auto;
+      }
+      .login-title {
+        padding-top: 45px;
+      }
+    </style>
 </head>
 <body>
 <div class="login-page">
   <div class="login-box">
+      <div class="login-header">
+        <img src="${pageContext.request.contextPath}/images/logo1.png" class="school-logo" alt="BUPT">
     <h1 class="login-title">TA Recruitment System</h1>
 
     <% String error = (String) request.getAttribute("error"); %>
