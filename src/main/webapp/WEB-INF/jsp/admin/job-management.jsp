@@ -63,11 +63,11 @@
                   </p>
                 </div>
                 <div class="applicant-actions">
-                  <a href="${pageContext.request.contextPath}/admin/jobs/<%= job.get("id") %>"
+                  <a href="${pageContext.request.contextPath}/admin/jobs/<%= job.get("jobId") %>"
                      class="btn btn-outline btn-sm">View Details</a>
                   <% if ("active".equals(status)) { %>
                     <form action="${pageContext.request.contextPath}/admin/jobs/action" method="post" style="display:inline;">
-                      <input type="hidden" name="jobId" value="<%= job.get("id") %>">
+                      <input type="hidden" name="jobId" value="<%= job.get("jobId") %>">
                       <input type="hidden" name="action" value="close">
                       <button type="submit" class="btn btn-outline-red btn-sm"
                               onclick="return confirm('Close this job posting?')">Close Job</button>
@@ -75,7 +75,7 @@
                   <% } %>
                   <% if ("closed".equals(status)) { %>
                   <form action="${pageContext.request.contextPath}/admin/jobs/action" method="post" style="display:inline;">
-                    <input type="hidden" name="jobId" value="<%= job.get("id") %>">
+                    <input type="hidden" name="jobId" value="<%= job.get("jobId") %>">
                     <input type="hidden" name="action" value="activate">
                     <button type="submit" class="btn btn-outline-green btn-sm"
                             onclick="return confirm('Activate this job posting?')">Activate</button>

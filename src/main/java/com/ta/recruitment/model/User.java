@@ -62,6 +62,8 @@ public class User implements Serializable {
         m.put("role", role);
         m.put("status", status != null ? status : "active");
         m.put("department", department != null ? department : "");
+        m.put("phone", phone != null ? phone : "");
+        m.put("cvFileName", cvFileName != null ? cvFileName : "");
         return m;
     }
 }

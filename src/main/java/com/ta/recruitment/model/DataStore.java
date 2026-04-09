@@ -206,7 +206,7 @@ public class DataStore {
     }
 
     public void closeJob(String jobId) {
-        Job j = findJobById(jobId);
+        Job j = findJobByJobId(jobId);
         if (j != null) {
             j.setStatus("closed");
             saveJobs();
@@ -214,7 +214,7 @@ public class DataStore {
     }
 
     public void openJob(String jobId) {
-        Job j = findJobById(jobId);
+        Job j = findJobByJobId(jobId);
         if (j != null) {
             j.setStatus("active");
             saveJobs();
@@ -278,7 +278,7 @@ public class DataStore {
         List<User> tas = getUsersByRole("ta");
 
         for (User ta : tas) {
-            int totalHours = ta.getWorkload();
+            int totalHours = 0;
             List<Application> accepted = new ArrayList<>();
 
             // 找出已录取的申请
@@ -295,7 +295,7 @@ public class DataStore {
                     try {
                         String h = j.getHours().replaceAll("[^0-9]", "");
                         if (!h.isEmpty()) {
-                            if(totalHours==0)  totalHours += Integer.parseInt(h);
+                            totalHours += Integer.parseInt(h);
                         }
                     } catch (Exception ignored) {}
                 }
@@ -438,6 +438,7 @@ public class DataStore {
             sb.append("\"status\":\"").append(esc(u.getStatus() != null ? u.getStatus() : "active")).append("\",");
             sb.append("\"department\":\"").append(esc(u.getDepartment() != null ? u.getDepartment() : "")).append("\",");
             sb.append("\"phone\":\"").append(esc(u.getPhone() != null ? u.getPhone() : "")).append("\",");
+            sb.append("\"cvFileName\":\"").append(esc(u.getCvFileName() != null ? u.getCvFileName() : "")).append("\",");
             sb.append("\"workload\":\"").append(esc(String.valueOf(u.getWorkload()))).append("\"");
             sb.append("}");
             if (i < users.size() - 1) sb.append(",");
@@ -493,7 +494,8 @@ public class DataStore {
             sb.append("\"taEmail\":\"").append(esc(a.getTaEmail() != null ? a.getTaEmail() : "")).append("\",");
             sb.append("\"status\":\"").append(esc(a.getStatus() != null ? a.getStatus() : "pending")).append("\",");
             sb.append("\"appliedDate\":\"").append(esc(a.getAppliedDate() != null ? a.getAppliedDate() : "")).append("\",");
-            sb.append("\"coverLetter\":\"").append(esc(a.getCoverLetter() != null ? a.getCoverLetter() : "")).append("\"");
+            sb.append("\"coverLetter\":\"").append(esc(a.getCoverLetter() != null ? a.getCoverLetter() : "")).append("\",");
+            sb.append("\"cvFileName\":\"").append(esc(a.getCvFileName() != null ? a.getCvFileName() : "")).append("\"");
             sb.append("}");
             if (i < applications.size() - 1) sb.append(",");
             sb.append("\n");
@@ -517,7 +519,9 @@ public class DataStore {
             u.setStatus(r.getOrDefault("status","active"));
             u.setDepartment(r.get("department"));
             u.setPhone(r.get("phone"));
-            u.setWorkload(Integer.parseInt(r.get("totalHours")));
+            u.setCvFileName(r.get("cvFileName"));
+            String wl = r.get("workload");
+            u.setWorkload(wl != null && !wl.isEmpty() ? Integer.parseInt(wl) : 0);
             list.add(u);
         }
         return list;
@@ -563,6 +567,7 @@ public class DataStore {
             a.setStatus(r.getOrDefault("status","pending"));
             a.setAppliedDate(r.get("appliedDate"));
             a.setCoverLetter(r.get("coverLetter"));
+            a.setCvFileName(r.get("cvFileName"));
             list.add(a);
         }
         return list;

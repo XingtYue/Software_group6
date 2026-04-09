@@ -54,29 +54,33 @@
                 </div>
                 <div class="applicant-actions">
                   <% if ("pending".equals(status)) { %>
-                    <form action="${pageContext.request.contextPath}/mo/course/<%= courseId %>/action"
+                    <form action="${pageContext.request.contextPath}/mo/select/action"
                           method="post" style="display:inline;">
                       <input type="hidden" name="appId" value="<%= app.get("id") %>">
+                      <input type="hidden" name="jobId" value="<%= courseId %>">
                       <input type="hidden" name="action" value="accept">
                       <button type="submit" class="btn btn-green btn-sm">Accept</button>
                     </form>
-                    <form action="${pageContext.request.contextPath}/mo/course/<%= courseId %>/action"
+                    <form action="${pageContext.request.contextPath}/mo/select/action"
                           method="post" style="display:inline;">
                       <input type="hidden" name="appId" value="<%= app.get("id") %>">
+                      <input type="hidden" name="jobId" value="<%= courseId %>">
                       <input type="hidden" name="action" value="reject">
                       <button type="submit" class="btn btn-outline-red btn-sm">Reject</button>
                     </form>
                   <% } else if ("accepted".equals(status)) { %>
-                    <form action="${pageContext.request.contextPath}/mo/course/<%= courseId %>/action"
+                    <form action="${pageContext.request.contextPath}/mo/select/action"
                           method="post" style="display:inline;">
                       <input type="hidden" name="appId" value="<%= app.get("id") %>">
+                      <input type="hidden" name="jobId" value="<%= courseId %>">
                       <input type="hidden" name="action" value="reject">
                       <button type="submit" class="btn btn-outline-red btn-sm">Reject</button>
                     </form>
                   <% } else { %>
-                    <form action="${pageContext.request.contextPath}/mo/course/<%= courseId %>/action"
+                    <form action="${pageContext.request.contextPath}/mo/select/action"
                           method="post" style="display:inline;">
                       <input type="hidden" name="appId" value="<%= app.get("id") %>">
+                      <input type="hidden" name="jobId" value="<%= courseId %>">
                       <input type="hidden" name="action" value="restore">
                       <button type="submit" class="btn btn-outline-blue btn-sm">Restore</button>
                     </form>

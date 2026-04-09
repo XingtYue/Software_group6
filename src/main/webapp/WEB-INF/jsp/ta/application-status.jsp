@@ -44,6 +44,9 @@
                 <div style="flex:1;">
                   <h3 class="text-lg mb-2"><%= app.get("jobTitle") %></h3>
                   <p class="text-sm text-gray-600">Applied: <%= app.get("appliedDate") %></p>
+                  <% String cl = app.get("coverLetter"); if (cl != null && !cl.trim().isEmpty()) { %>
+                  <p class="text-sm text-gray-600" style="margin-top:6px;">Cover letter: <%= cl.length() > 80 ? cl.substring(0,80) + "..." : cl %></p>
+                  <% } %>
                 </div>
                 <div style="margin-left:16px;">
                   <span class="badge <%= badgeClass %>"><%= statusLabel %></span>
@@ -69,19 +72,19 @@
         <p class="sidebar-title">APPLICATION SUMMARY</p>
         <div class="stat-card">
           <p class="stat-label">Pending</p>
-          <p class="stat-value">${pendingCount != null ? pendingCount : 2}</p>
+          <p class="stat-value">${pendingCount}</p>
         </div>
         <div class="stat-card green">
           <p class="stat-label">Accepted</p>
-          <p class="stat-value green">${acceptedCount != null ? acceptedCount : 1}</p>
+          <p class="stat-value green">${acceptedCount}</p>
         </div>
         <div class="stat-card">
           <p class="stat-label">Rejected</p>
-          <p class="stat-value">${rejectedCount != null ? rejectedCount : 1}</p>
+          <p class="stat-value">${rejectedCount}</p>
         </div>
         <div class="stat-card">
           <p class="stat-label">Total Applications</p>
-          <p class="stat-value">${totalCount != null ? totalCount : 4}</p>
+          <p class="stat-value">${totalCount}</p>
         </div>
 
         <div class="sidebar-section">

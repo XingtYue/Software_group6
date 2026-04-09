@@ -65,6 +65,7 @@ public class Job {
     public java.util.Map<String,String> toMap() {
         java.util.Map<String,String> m = new java.util.LinkedHashMap<>();
         m.put("id", id);
+        m.put("jobId", jobId != null ? jobId : "");
         m.put("title", title);
         m.put("description", description != null ? description : "");
         m.put("department", department != null ? department : "");

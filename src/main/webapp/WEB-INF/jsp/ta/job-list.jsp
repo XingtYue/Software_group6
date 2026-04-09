@@ -47,7 +47,7 @@
                 <p class="job-card-meta">Department: <%= job.get("department") %></p>
               </div>
               <div style="margin-left:16px;flex-shrink:0;">
-                <a href="${pageContext.request.contextPath}/ta/jobs/<%= job.get("id") %>"
+                <a href="${pageContext.request.contextPath}/ta/jobs/<%= job.get("jobId") %>"
                    class="btn btn-primary btn-sm">View Details</a>
               </div>
             </div>
@@ -68,15 +68,15 @@
         <p class="sidebar-title">OVERVIEW</p>
         <div class="stat-card">
           <p class="stat-label">Active Applications</p>
-          <p class="stat-value">${activeApplications != null ? activeApplications : 3}</p>
+          <p class="stat-value">${activeApplications}</p>
         </div>
         <div class="stat-card">
           <p class="stat-label">Available Jobs</p>
-          <p class="stat-value">${totalJobs != null ? totalJobs : 8}</p>
+          <p class="stat-value">${totalJobs}</p>
         </div>
         <div class="stat-card">
           <p class="stat-label">Accepted Positions</p>
-          <p class="stat-value">${acceptedPositions != null ? acceptedPositions : 1}</p>
+          <p class="stat-value">${acceptedPositions}</p>
         </div>
 
         <div class="sidebar-section">

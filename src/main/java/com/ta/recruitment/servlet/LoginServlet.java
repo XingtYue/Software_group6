@@ -26,18 +26,34 @@ public class LoginServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
+        // 设置请求编码，防止中文乱码
+        req.setCharacterEncoding("UTF-8");
+        resp.setContentType("text/html;charset=UTF-8");
+
         String email = req.getParameter("email");
         String password = req.getParameter("password");
 
         User user = DataStore.getInstance().findUserByEmailAndPassword(email, password);
+
         if (user != null) {
-            HttpSession session = req.getSession(true);
-            session.setAttribute("user", user);
-            session.setAttribute("userId", user.getId());
-            session.setAttribute("userName", user.getName());
-            session.setAttribute("userRole", user.getRole());
-            redirectByRole(resp, req, user.getRole());
+            // 账号存在，判断状态
+            if ("active".equals(user.getStatus())) {
+                // 账号激活，登录成功
+                HttpSession session = req.getSession(true);
+                session.setAttribute("user", user);
+                session.setAttribute("userId", user.getId());
+                session.setAttribute("userName", user.getName());
+                session.setAttribute("userRole", user.getRole());
+
+                // 根据角色跳转
+                redirectByRole(resp, req, user.getRole());
+            } else {
+                // 账号未激活/禁用
+                req.setAttribute("error", "Your account has been disabled. Please contact the administrator");
+                req.getRequestDispatcher("/login.jsp").forward(req, resp);
+            }
         } else {
+            // 账号或密码错误
             req.setAttribute("error", "Invalid email or password. Please try again.");
             req.getRequestDispatcher("/login.jsp").forward(req, resp);
         }
