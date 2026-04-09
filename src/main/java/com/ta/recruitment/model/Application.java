@@ -59,6 +59,8 @@ public class Application {
         m.put("status", status != null ? status : "pending");
         m.put("appliedDate", appliedDate != null ? appliedDate : "");
         m.put("submittedAt", appliedDate != null ? appliedDate : "");
+        m.put("coverLetter", coverLetter != null ? coverLetter : "");
+        m.put("cvFileName", cvFileName != null ? cvFileName : "");
         return m;
     }
 }

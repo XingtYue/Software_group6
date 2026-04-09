@@ -33,7 +33,7 @@
               if (courses != null && !courses.isEmpty()) {
                 for (Map<String,String> course : courses) {
             %>
-            <a href="${pageContext.request.contextPath}/mo/course/<%= course.get("id") %>"
+            <a href="${pageContext.request.contextPath}/mo/courses/<%= course.get("id") %>"
                style="text-decoration:none;color:inherit;">
               <div class="course-card">
                 <div>

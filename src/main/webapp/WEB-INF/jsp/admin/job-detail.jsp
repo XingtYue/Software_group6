@@ -33,11 +33,13 @@
          class="btn btn-outline btn-sm mb-6">&larr; Back to Job Management</a>
 
       <%
-        Map<String,Object> job = (Map<String,Object>) request.getAttribute("job");
-        if (job == null) job = new java.util.HashMap<String, Object>();
+        @SuppressWarnings("unchecked")
+        Map<String,String> job = (Map<String,String>) request.getAttribute("job");
+        if (job == null) job = new java.util.HashMap<String,String>();
         String jobId = (String) request.getAttribute("jobId");
         if (jobId == null) jobId = "1";
         List<Map<String,String>> applicants = (List<Map<String,String>>) request.getAttribute("applicants");
+        String status = job.getOrDefault("status","active");
       %>
 
       <div class="card card-p8" style="margin-top:16px;margin-bottom:24px;">
@@ -46,7 +48,6 @@
             <h2 class="text-2xl mb-2"><%= job.getOrDefault("title","Job Title") %></h2>
             <p class="text-gray-600">Posted by: <%= job.getOrDefault("postedBy","Unknown") %></p>
           </div>
-          <% String status = (String) job.getOrDefault("status","active"); %>
           <span class="badge <%= "active".equals(status) ? "badge-active" : "badge-closed" %>">
             <%= status.substring(0,1).toUpperCase() + status.substring(1) %>
           </span>

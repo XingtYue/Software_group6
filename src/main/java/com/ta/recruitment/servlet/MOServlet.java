@@ -29,48 +29,47 @@ public class MOServlet extends HttpServlet {
         if (path.equals("/applicants") || path.equals("/applicants/")) {
             // List jobs posted by this MO with applicant counts
             List<Job> myJobs = ds.getJobsByMO(userId);
-            List<Map<String,String>> jobMaps = new ArrayList<>();
+            List<Map<String,String>> courseMaps = new ArrayList<>();
             for (Job j : myJobs) {
-                Map<String,String> m = j.toMap();
-                m.put("applicantCount", String.valueOf(ds.getApplicationsByJob(j.getId()).size()));
-                jobMaps.add(m);
+                Map<String,String> m = new LinkedHashMap<>();
+                m.put("id", j.getJobId());          // use sequential jobId as the link key
+                m.put("title", j.getTitle());
+                m.put("code", j.getCourseCode() != null ? j.getCourseCode() : "");
+                m.put("status", j.getStatus() != null ? j.getStatus() : "active");
+                m.put("applicantCount", String.valueOf(ds.getApplicationsByJob(j.getJobId()).size()));
+                courseMaps.add(m);
             }
-            req.setAttribute("jobs", jobMaps);
+            req.setAttribute("courses", courseMaps);
             req.getRequestDispatcher("/WEB-INF/jsp/mo/applicant-list.jsp").forward(req, resp);
-
-        } else if (path.startsWith("/applicants/")) {
-            // Applicants for a specific job
-            String jobId = path.substring("/applicants/".length());
-            Job job = ds.findJobById(jobId);
-            if (job == null) { resp.sendError(404); return; }
-            List<Application> apps = ds.getApplicationsByJob(jobId);
-            List<Map<String,String>> appMaps = new ArrayList<>();
-            for (Application a : apps) appMaps.add(a.toMap());
-            req.setAttribute("job", job.toMap());
-            req.setAttribute("jobId", jobId);
-            req.setAttribute("applicants", appMaps);
-            req.getRequestDispatcher("/WEB-INF/jsp/mo/applicant-list.jsp").forward(req, resp);
-
-        } else if (path.equals("/post-job") || path.equals("/post-job/")) {
-            req.getRequestDispatcher("/WEB-INF/jsp/mo/post-job.jsp").forward(req, resp);
 
         } else if (path.startsWith("/courses/")) {
-            // Course detail (job detail for MO)
+            // Course detail – URL contains sequential jobId
             String jobId = path.substring("/courses/".length());
-            Job job = ds.findJobById(jobId);
+            Job job = ds.findJobByJobId(jobId);
             if (job == null) { resp.sendError(404); return; }
             List<Application> apps = ds.getApplicationsByJob(jobId);
             List<Map<String,String>> appMaps = new ArrayList<>();
-            for (Application a : apps) appMaps.add(a.toMap());
-            req.setAttribute("job", job.toMap());
-            req.setAttribute("jobId", jobId);
+            int pending = 0, accepted = 0, rejected = 0;
+            for (Application a : apps) {
+                appMaps.add(a.toMap());
+                if ("accepted".equals(a.getStatus())) accepted++;
+                else if ("rejected".equals(a.getStatus())) rejected++;
+                else pending++;
+            }
             req.setAttribute("applicants", appMaps);
+            req.setAttribute("courseId", jobId);
+            req.setAttribute("courseTitle", job.getTitle());
+            req.setAttribute("courseCode", job.getCourseCode());
+            req.setAttribute("totalApplicants", apps.size());
+            req.setAttribute("pendingCount", pending);
+            req.setAttribute("acceptedCount", accepted);
+            req.setAttribute("rejectedCount", rejected);
             req.getRequestDispatcher("/WEB-INF/jsp/mo/course-detail.jsp").forward(req, resp);
 
         } else if (path.equals("/profile") || path.equals("/profile/")) {
             User user = ds.findUserById(userId);
             if (user != null) req.setAttribute("user", user.toMap());
-            req.getRequestDispatcher("/WEB-INF/jsp/ta/profile.jsp").forward(req, resp);
+            req.getRequestDispatcher("/WEB-INF/jsp/mo/profile.jsp").forward(req, resp);
 
         } else {
             resp.sendRedirect(req.getContextPath() + "/mo/applicants");
@@ -120,6 +119,7 @@ public class MOServlet extends HttpServlet {
             if (appId != null && action != null) {
                 if ("accept".equals(action)) ds.updateApplicationStatus(appId, "accepted");
                 else if ("reject".equals(action)) ds.updateApplicationStatus(appId, "rejected");
+                else if ("restore".equals(action)) ds.updateApplicationStatus(appId, "pending");
             }
             if (jobId != null) {
                 resp.sendRedirect(req.getContextPath() + "/mo/courses/" + jobId);
@@ -129,17 +129,41 @@ public class MOServlet extends HttpServlet {
 
         } else if (path.equals("/profile") || path.equals("/profile/")) {
             User user = ds.findUserById(userId);
-            if (user != null) {
-                String name = req.getParameter("name");
-                String phone = req.getParameter("phone");
-                String dept = req.getParameter("department");
-                if (name != null && !name.trim().isEmpty()) user.setName(name.trim());
-                if (phone != null) user.setPhone(phone.trim());
-                if (dept != null) user.setDepartment(dept.trim());
-                ds.updateUser(user);
-                req.getSession().setAttribute("userName", user.getName());
+            String action = req.getParameter("action");
+            if ("changePassword".equals(action)) {
+                String error = null;
+                if (user != null) {
+                    String oldPwd = req.getParameter("oldPassword");
+                    String newPwd = req.getParameter("newPassword");
+                    String confirmPwd = req.getParameter("confirmPassword");
+                    if (!user.getPassword().equals(oldPwd)) {
+                        error = "Current password is incorrect.";
+                    } else if (newPwd == null || newPwd.length() < 4) {
+                        error = "New password must be at least 4 characters.";
+                    } else if (!newPwd.equals(confirmPwd)) {
+                        error = "New passwords do not match.";
+                    } else {
+                        user.setPassword(newPwd);
+                        ds.updateUser(user);
+                    }
+                }
+                if (error != null) req.setAttribute("error", error);
+                else req.setAttribute("success", "Password changed successfully.");
+            } else {
+                if (user != null) {
+                    String name = req.getParameter("name");
+                    String phone = req.getParameter("phone");
+                    String dept = req.getParameter("department");
+                    if (name != null && !name.trim().isEmpty()) user.setName(name.trim());
+                    if (phone != null) user.setPhone(phone.trim());
+                    if (dept != null) user.setDepartment(dept.trim());
+                    ds.updateUser(user);
+                    req.getSession().setAttribute("userName", user.getName());
+                }
+                req.setAttribute("success", "Profile saved successfully.");
             }
-            resp.sendRedirect(req.getContextPath() + "/mo/profile");
+            if (user != null) req.setAttribute("user", user.toMap());
+            req.getRequestDispatcher("/WEB-INF/jsp/mo/profile.jsp").forward(req, resp);
         } else {
             resp.sendRedirect(req.getContextPath() + "/mo/applicants");
         }

@@ -60,7 +60,7 @@ public class AdminServlet extends HttpServlet {
             int activeCount = 0, closedCount = 0, totalApplicants = 0;
             for (Job j : allJobs) {
                 Map<String,String> m = j.toMap();
-                int cnt = ds.getApplicationsByJob(j.getId()).size();
+                int cnt = ds.getApplicationsByJob(j.getJobId()).size();
                 m.put("applicantCount", String.valueOf(cnt));
                 totalApplicants += cnt;
                 if ("active".equals(j.getStatus())) activeCount++;
@@ -75,8 +75,9 @@ public class AdminServlet extends HttpServlet {
             req.getRequestDispatcher("/WEB-INF/jsp/admin/job-management.jsp").forward(req, resp);
 
         } else if (path.startsWith("/jobs/")) {
+            // URL contains sequential jobId
             String jobId = path.substring("/jobs/".length());
-            Job job = ds.findJobById(jobId);
+            Job job = ds.findJobByJobId(jobId);
             if (job == null) { resp.sendError(404); return; }
             List<Application> apps = ds.getApplicationsByJob(jobId);
             List<Map<String,String>> appMaps = new ArrayList<>();
@@ -137,7 +138,7 @@ public class AdminServlet extends HttpServlet {
             String userId = (String) req.getSession().getAttribute("userId");
             User user = ds.findUserById(userId);
             if (user != null) req.setAttribute("user", user.toMap());
-            req.getRequestDispatcher("/WEB-INF/jsp/ta/profile.jsp").forward(req, resp);
+            req.getRequestDispatcher("/WEB-INF/jsp/admin/profile.jsp").forward(req, resp);
 
         } else {
             resp.sendRedirect(req.getContextPath() + "/admin");
@@ -196,6 +197,45 @@ public class AdminServlet extends HttpServlet {
                 } catch (NumberFormatException e) {}
             }
             resp.sendRedirect(req.getContextPath() + "/admin/workload");
+
+        } else if (path.equals("/profile") || path.equals("/profile/")) {
+            String userId = (String) req.getSession().getAttribute("userId");
+            User user = ds.findUserById(userId);
+            String action = req.getParameter("action");
+            if ("changePassword".equals(action)) {
+                String error = null;
+                if (user != null) {
+                    String oldPwd = req.getParameter("oldPassword");
+                    String newPwd = req.getParameter("newPassword");
+                    String confirmPwd = req.getParameter("confirmPassword");
+                    if (!user.getPassword().equals(oldPwd)) {
+                        error = "Current password is incorrect.";
+                    } else if (newPwd == null || newPwd.length() < 4) {
+                        error = "New password must be at least 4 characters.";
+                    } else if (!newPwd.equals(confirmPwd)) {
+                        error = "New passwords do not match.";
+                    } else {
+                        user.setPassword(newPwd);
+                        ds.updateUser(user);
+                    }
+                }
+                if (error != null) req.setAttribute("error", error);
+                else req.setAttribute("success", "Password changed successfully.");
+            } else {
+                if (user != null) {
+                    String name = req.getParameter("name");
+                    String phone = req.getParameter("phone");
+                    String dept = req.getParameter("department");
+                    if (name != null && !name.trim().isEmpty()) user.setName(name.trim());
+                    if (phone != null) user.setPhone(phone.trim());
+                    if (dept != null) user.setDepartment(dept.trim());
+                    ds.updateUser(user);
+                    req.getSession().setAttribute("userName", user.getName());
+                }
+                req.setAttribute("success", "Profile saved successfully.");
+            }
+            if (user != null) req.setAttribute("user", user.toMap());
+            req.getRequestDispatcher("/WEB-INF/jsp/admin/profile.jsp").forward(req, resp);
 
         } else {
             resp.sendRedirect(req.getContextPath() + "/admin");
