@@ -37,6 +37,11 @@
         <%= error %>
       </div>
     <% } %>
+    <% if ("1".equals(request.getParameter("registered"))) { %>
+      <div style="background:#f0fdf4;border:1px solid #86efac;color:#15803d;padding:10px 14px;border-radius:6px;margin-bottom:16px;font-size:13px;">
+        Account created successfully. Please log in.
+      </div>
+    <% } %>
 
     <form action="${pageContext.request.contextPath}/login" method="post">
       <div class="form-group">
