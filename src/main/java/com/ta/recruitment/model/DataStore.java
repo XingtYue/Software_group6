@@ -161,6 +161,20 @@ public class DataStore {
         }
     }
 
+    public User findUserByEmail(String email) {
+        if (email == null) return null;
+        for (User u : users) {
+            if (email.equalsIgnoreCase(u.getEmail())) return u;
+        }
+        return null;
+    }
+
+    public synchronized void addUser(User user) {
+        user.setId("u" + generateId());
+        users.add(user);
+        saveUsers();
+    }
+
     // ==================== JOB OPERATIONS ====================
 
     public List<Job> getAllJobs() {
