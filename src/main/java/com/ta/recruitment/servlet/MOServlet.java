@@ -27,36 +27,58 @@ public class MOServlet extends HttpServlet {
         String userId = (String) req.getSession().getAttribute("userId");
 
         if (path.equals("/applicants") || path.equals("/applicants/")) {
-            // List jobs posted by this MO with applicant counts
+            // List jobs posted by this MO with applicant counts + real sidebar stats
             List<Job> myJobs = ds.getJobsByMO(userId);
             List<Map<String,String>> courseMaps = new ArrayList<>();
+            int activeCourses = 0, pendingReviews = 0, acceptedTAs = 0;
             for (Job j : myJobs) {
                 Map<String,String> m = new LinkedHashMap<>();
-                m.put("id", j.getJobId());          // use sequential jobId as the link key
+                m.put("id", j.getJobId());
                 m.put("title", j.getTitle());
                 m.put("code", j.getCourseCode() != null ? j.getCourseCode() : "");
                 m.put("status", j.getStatus() != null ? j.getStatus() : "active");
-                m.put("applicantCount", String.valueOf(ds.getApplicationsByJob(j.getJobId()).size()));
+                List<Application> jobApps = ds.getApplicationsByJob(j.getJobId());
+                m.put("applicantCount", String.valueOf(jobApps.size()));
+                if ("active".equals(j.getStatus())) activeCourses++;
+                for (Application a : jobApps) {
+                    if ("pending".equals(a.getStatus())) pendingReviews++;
+                    else if ("accepted".equals(a.getStatus())) acceptedTAs++;
+                }
                 courseMaps.add(m);
             }
             req.setAttribute("courses", courseMaps);
+            req.setAttribute("activeCourses", activeCourses);
+            req.setAttribute("pendingReviews", pendingReviews);
+            req.setAttribute("acceptedTAs", acceptedTAs);
             req.getRequestDispatcher("/WEB-INF/jsp/mo/applicant-list.jsp").forward(req, resp);
 
         } else if (path.startsWith("/courses/")) {
-            // Course detail – URL contains sequential jobId
+            // Course detail – pass TA user details and split by status
             String jobId = path.substring("/courses/".length());
             Job job = ds.findJobByJobId(jobId);
             if (job == null) { resp.sendError(404); return; }
             List<Application> apps = ds.getApplicationsByJob(jobId);
-            List<Map<String,String>> appMaps = new ArrayList<>();
+            List<Map<String,String>> pendingMaps = new ArrayList<>();
+            List<Map<String,String>> acceptedMaps = new ArrayList<>();
+            List<Map<String,String>> rejectedMaps = new ArrayList<>();
             int pending = 0, accepted = 0, rejected = 0;
             for (Application a : apps) {
-                appMaps.add(a.toMap());
-                if ("accepted".equals(a.getStatus())) accepted++;
-                else if ("rejected".equals(a.getStatus())) rejected++;
-                else pending++;
+                Map<String,String> appMap = a.toMap();
+                User taUser = ds.findUserById(a.getTaId());
+                if (taUser != null) {
+                    appMap.put("taPhone", taUser.getPhone() != null ? taUser.getPhone() : "");
+                    appMap.put("taDepartment", taUser.getDepartment() != null ? taUser.getDepartment() : "");
+                } else {
+                    appMap.put("taPhone", "");
+                    appMap.put("taDepartment", "");
+                }
+                if ("accepted".equals(a.getStatus())) { accepted++; acceptedMaps.add(appMap); }
+                else if ("rejected".equals(a.getStatus())) { rejected++; rejectedMaps.add(appMap); }
+                else { pending++; pendingMaps.add(appMap); }
             }
-            req.setAttribute("applicants", appMaps);
+            req.setAttribute("pendingApplicants", pendingMaps);
+            req.setAttribute("acceptedApplicants", acceptedMaps);
+            req.setAttribute("rejectedApplicants", rejectedMaps);
             req.setAttribute("courseId", jobId);
             req.setAttribute("courseTitle", job.getTitle());
             req.setAttribute("courseCode", job.getCourseCode());
@@ -65,6 +87,45 @@ public class MOServlet extends HttpServlet {
             req.setAttribute("acceptedCount", accepted);
             req.setAttribute("rejectedCount", rejected);
             req.getRequestDispatcher("/WEB-INF/jsp/mo/course-detail.jsp").forward(req, resp);
+
+        } else if (path.equals("/post-job") || path.equals("/post-job/")) {
+            req.getRequestDispatcher("/WEB-INF/jsp/mo/post-job.jsp").forward(req, resp);
+
+        } else if (path.startsWith("/cv/download")) {
+            // Serve TA's CV file for MO review
+            String appId = req.getParameter("appId");
+            String cvFile = null;
+            String taName = "TA";
+            if (appId != null) {
+                Application app = ds.findApplicationById(appId);
+                if (app != null) {
+                    cvFile = app.getCvFileName();
+                    taName = app.getTaName() != null ? app.getTaName() : "TA";
+                    if (cvFile == null || cvFile.isEmpty()) {
+                        User ta = ds.findUserById(app.getTaId());
+                        if (ta != null) {
+                            cvFile = ta.getCvFileName();
+                            if (ta.getName() != null) taName = ta.getName();
+                        }
+                    }
+                }
+            }
+            if (cvFile == null || cvFile.isEmpty()) { resp.sendError(404, "CV not found"); return; }
+            String uploadsDir = req.getServletContext().getRealPath("/WEB-INF/uploads/cv/");
+            java.io.File file = new java.io.File(uploadsDir, cvFile);
+            if (!file.exists()) { resp.sendError(404, "CV file not found"); return; }
+            String contentType = cvFile.toLowerCase().endsWith(".pdf") ? "application/pdf" : "application/octet-stream";
+            resp.setContentType(contentType);
+            String safeFileName = taName.replaceAll("[^a-zA-Z0-9\\s._-]", "_") + "_CV.pdf";
+            resp.setHeader("Content-Disposition", "inline; filename=\"" + safeFileName + "\"");
+            resp.setContentLength((int) file.length());
+            try (java.io.FileInputStream fis = new java.io.FileInputStream(file);
+                 java.io.OutputStream os = resp.getOutputStream()) {
+                byte[] buf = new byte[4096];
+                int len;
+                while ((len = fis.read(buf)) != -1) os.write(buf, 0, len);
+            }
+            return;
 
         } else if (path.equals("/profile") || path.equals("/profile/")) {
             User user = ds.findUserById(userId);
@@ -112,14 +173,17 @@ public class MOServlet extends HttpServlet {
             resp.sendRedirect(req.getContextPath() + "/mo/applicants");
 
         } else if (path.startsWith("/select/")) {
-            // Accept/reject applicant
+            // Accept/reject applicant – MO can only modify pending applications
             String appId = req.getParameter("appId");
             String action = req.getParameter("action");
             String jobId = req.getParameter("jobId");
             if (appId != null && action != null) {
-                if ("accept".equals(action)) ds.updateApplicationStatus(appId, "accepted");
-                else if ("reject".equals(action)) ds.updateApplicationStatus(appId, "rejected");
-                else if ("restore".equals(action)) ds.updateApplicationStatus(appId, "pending");
+                Application existingApp = ds.findApplicationById(appId);
+                if (existingApp != null && "pending".equals(existingApp.getStatus())) {
+                    if ("accept".equals(action)) ds.updateApplicationStatus(appId, "accepted");
+                    else if ("reject".equals(action)) ds.updateApplicationStatus(appId, "rejected");
+                }
+                // accepted/rejected applications can only be changed by admin
             }
             if (jobId != null) {
                 resp.sendRedirect(req.getContextPath() + "/mo/courses/" + jobId);
