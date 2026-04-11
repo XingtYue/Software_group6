@@ -131,10 +131,30 @@ public class AdminServlet extends HttpServlet {
                 return;
             }
 
-            req.setAttribute("ta", ta);
-            req.getRequestDispatcher("/WEB-INF/jsp/admin/edit-workload.jsp").forward(req, resp);
+            // ✅【核心修复】获取这个 TA 的所有申请（已录用 + 待处理 + 已拒绝）
+            List<Application> taApps = DataStore.getInstance().getApplicationsByTA(taId);
+            List<Map<String, String>> taApplications = new ArrayList<>();
 
-        } else if (path.equals("/profile") || path.equals("/profile/")) {
+            for (Application app : taApps) {
+                Map<String, String> map = app.toMap();
+
+                // ✅ 把职位的小时数放进 map，给前端页面显示
+                Job job = DataStore.getInstance().findJobByJobId(app.getJobId());
+                if (job != null) {
+                    map.put("jobHours", job.getHours()); // 职位小时数
+                } else {
+                    map.put("jobHours", "0");
+                }
+
+                taApplications.add(map);
+            }
+
+            // ✅ 传给 JSP 页面
+            req.setAttribute("ta", ta);
+            req.setAttribute("taApplications", taApplications);
+
+            req.getRequestDispatcher("/WEB-INF/jsp/admin/edit-workload.jsp").forward(req, resp);
+        }else if (path.equals("/profile") || path.equals("/profile/")) {
             String userId = (String) req.getSession().getAttribute("userId");
             User user = ds.findUserById(userId);
             if (user != null) req.setAttribute("user", user.toMap());
@@ -168,14 +188,14 @@ public class AdminServlet extends HttpServlet {
         } else if (path.equals("/applications/action") || path.equals("/applications/action/")) {
             String appId = req.getParameter("appId");
             String action = req.getParameter("action");
+
             if (appId != null && action != null) {
                 if ("accept".equals(action)) ds.updateApplicationStatus(appId, "accepted");
                 else if ("reject".equals(action)) ds.updateApplicationStatus(appId, "rejected");
                 else if ("restore".equals(action)) ds.updateApplicationStatus(appId, "pending");
             }
-            resp.sendRedirect(req.getContextPath() + "/admin/applications");
-
-        } else if (path.equals("/users/action") || path.equals("/users/action/")) {
+            resp.sendRedirect(req.getContextPath() + "/admin/workload");
+        }else if (path.equals("/users/action") || path.equals("/users/action/")) {
             String userId = req.getParameter("userId");
             String action = req.getParameter("action");
             if (userId != null && action != null) {
