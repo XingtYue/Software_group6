@@ -81,7 +81,18 @@ public class AdminServlet extends HttpServlet {
             if (job == null) { resp.sendError(404); return; }
             List<Application> apps = ds.getApplicationsByJob(jobId);
             List<Map<String,String>> appMaps = new ArrayList<>();
-            for (Application a : apps) appMaps.add(a.toMap());
+            for (Application a : apps) {
+                Map<String,String> appMap = a.toMap();
+                User taUser = ds.findUserById(a.getTaId());
+                if (taUser != null) {
+                    appMap.put("taPhone", taUser.getPhone() != null ? taUser.getPhone() : "");
+                    appMap.put("taDepartment", taUser.getDepartment() != null ? taUser.getDepartment() : "");
+                } else {
+                    appMap.put("taPhone", "");
+                    appMap.put("taDepartment", "");
+                }
+                appMaps.add(appMap);
+            }
             req.setAttribute("job", job.toMap());
             req.setAttribute("jobId", jobId);
             req.setAttribute("applicants", appMaps);
@@ -92,7 +103,16 @@ public class AdminServlet extends HttpServlet {
             List<Map<String,String>> appMaps = new ArrayList<>();
             int pending = 0, accepted = 0, rejected = 0;
             for (Application a : allApps) {
-                appMaps.add(a.toMap());
+                Map<String,String> appMap = a.toMap();
+                User taUser = ds.findUserById(a.getTaId());
+                if (taUser != null) {
+                    appMap.put("taPhone", taUser.getPhone() != null ? taUser.getPhone() : "");
+                    appMap.put("taDepartment", taUser.getDepartment() != null ? taUser.getDepartment() : "");
+                } else {
+                    appMap.put("taPhone", "");
+                    appMap.put("taDepartment", "");
+                }
+                appMaps.add(appMap);
                 String s = a.getStatus();
                 if ("accepted".equals(s)) accepted++;
                 else if ("rejected".equals(s)) rejected++;
@@ -104,6 +124,55 @@ public class AdminServlet extends HttpServlet {
             req.setAttribute("acceptedCount", accepted);
             req.setAttribute("rejectedCount", rejected);
             req.getRequestDispatcher("/WEB-INF/jsp/admin/application-management.jsp").forward(req, resp);
+
+        } else if (path.startsWith("/cv/download")) {
+            String appId = req.getParameter("appId");
+            String cvFile = null;
+            String taName = "TA";
+            String userId = req.getParameter("userId");
+            if (userId != null) {
+                User user = ds.findUserById(userId);
+                if (user != null) {
+                    cvFile = user.getCvFileName();
+                    taName = user.getName();
+                }
+            }
+            if (appId != null) {
+                Application app = ds.findApplicationById(appId);
+                if (app != null) {
+                    cvFile = app.getCvFileName();
+                    taName = app.getTaName() != null ? app.getTaName() : "TA";
+                    if (cvFile == null || cvFile.isEmpty()) {
+                        User ta = ds.findUserById(app.getTaId());
+                        if (ta != null) {
+                            cvFile = ta.getCvFileName();
+                            if (ta.getName() != null) taName = ta.getName();
+                        }
+                    }
+                }
+            }
+            if (cvFile == null || cvFile.isEmpty()) {
+                resp.sendError(404, "CV not found");
+                return;
+            }
+            String uploadsDir = req.getServletContext().getRealPath("/WEB-INF/uploads/cv/");
+            java.io.File file = new java.io.File(uploadsDir, cvFile);
+            if (!file.exists()) {
+                resp.sendError(404, "CV file not found");
+                return;
+            }
+            String contentType = cvFile.toLowerCase().endsWith(".pdf") ? "application/pdf" : "application/octet-stream";
+            resp.setContentType(contentType);
+            String safeFileName = taName.replaceAll("[^a-zA-Z0-9\\s._-]", "_") + "_CV.pdf";
+            resp.setHeader("Content-Disposition", "inline; filename=\"" + safeFileName + "\"");
+            resp.setContentLength((int) file.length());
+            try (java.io.FileInputStream fis = new java.io.FileInputStream(file);
+                 java.io.OutputStream os = resp.getOutputStream()) {
+                byte[] buf = new byte[4096];
+                int len;
+                while ((len = fis.read(buf)) != -1) os.write(buf, 0, len);
+            }
+            return;
 
         } else if (path.equals("/workload") || path.equals("/workload/")) {
             List<Map<String,String>> workloads = ds.getWorkloadData();
@@ -188,13 +257,19 @@ public class AdminServlet extends HttpServlet {
         } else if (path.equals("/applications/action") || path.equals("/applications/action/")) {
             String appId = req.getParameter("appId");
             String action = req.getParameter("action");
+            String returnTo = req.getParameter("returnTo");
 
             if (appId != null && action != null) {
                 if ("accept".equals(action)) ds.updateApplicationStatus(appId, "accepted");
                 else if ("reject".equals(action)) ds.updateApplicationStatus(appId, "rejected");
                 else if ("restore".equals(action)) ds.updateApplicationStatus(appId, "pending");
             }
-            resp.sendRedirect(req.getContextPath() + "/admin/workload");
+            if (returnTo != null && !returnTo.trim().isEmpty()) {
+                if (!returnTo.startsWith("/")) returnTo = "/admin/applications";
+                resp.sendRedirect(req.getContextPath() + returnTo);
+            } else {
+                resp.sendRedirect(req.getContextPath() + "/admin/applications");
+            }
         }else if (path.equals("/users/action") || path.equals("/users/action/")) {
             String userId = req.getParameter("userId");
             String action = req.getParameter("action");
