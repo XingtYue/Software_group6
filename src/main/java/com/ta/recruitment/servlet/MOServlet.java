@@ -27,26 +27,39 @@ public class MOServlet extends HttpServlet {
         String userId = (String) req.getSession().getAttribute("userId");
 
         if (path.equals("/applicants") || path.equals("/applicants/")) {
-            // List jobs posted by this MO with applicant counts + real sidebar stats
-            List<Job> myJobs = ds.getJobsByMO(userId);
-            List<Map<String,String>> courseMaps = new ArrayList<>();
+            // List all jobs with applicant counts, categorized by ownership
+            List<Job> allJobs = ds.getAllJobs();
+            List<Map<String,String>> myJobMaps = new ArrayList<>();
+            List<Map<String,String>> otherJobMaps = new ArrayList<>();
             int activeCourses = 0, pendingReviews = 0, acceptedTAs = 0;
-            for (Job j : myJobs) {
+
+            for (Job j : allJobs) {
                 Map<String,String> m = new LinkedHashMap<>();
                 m.put("id", j.getJobId());
                 m.put("title", j.getTitle());
                 m.put("code", j.getCourseCode() != null ? j.getCourseCode() : "");
                 m.put("status", j.getStatus() != null ? j.getStatus() : "active");
+                m.put("department", j.getDepartment() != null ? j.getDepartment() : "");
+                m.put("postedBy", j.getPostedByName() != null ? j.getPostedByName() : "");
+                m.put("postedDate", j.getPostedDate() != null ? j.getPostedDate() : "");
+
                 List<Application> jobApps = ds.getApplicationsByJob(j.getJobId());
                 m.put("applicantCount", String.valueOf(jobApps.size()));
-                if ("active".equals(j.getStatus())) activeCourses++;
-                for (Application a : jobApps) {
-                    if ("pending".equals(a.getStatus())) pendingReviews++;
-                    else if ("accepted".equals(a.getStatus())) acceptedTAs++;
+
+                if (userId.equals(j.getPostedBy())) {
+                    myJobMaps.add(m);
+                    if ("active".equals(j.getStatus())) activeCourses++;
+                    for (Application a : jobApps) {
+                        if ("pending".equals(a.getStatus())) pendingReviews++;
+                        else if ("accepted".equals(a.getStatus())) acceptedTAs++;
+                    }
+                } else {
+                    otherJobMaps.add(m);
                 }
-                courseMaps.add(m);
             }
-            req.setAttribute("courses", courseMaps);
+
+            req.setAttribute("myJobs", myJobMaps);
+            req.setAttribute("otherJobs", otherJobMaps);
             req.setAttribute("activeCourses", activeCourses);
             req.setAttribute("pendingReviews", pendingReviews);
             req.setAttribute("acceptedTAs", acceptedTAs);
@@ -79,6 +92,7 @@ public class MOServlet extends HttpServlet {
             req.setAttribute("pendingApplicants", pendingMaps);
             req.setAttribute("acceptedApplicants", acceptedMaps);
             req.setAttribute("rejectedApplicants", rejectedMaps);
+            req.setAttribute("job", job.toMap());
             req.setAttribute("courseId", jobId);
             req.setAttribute("courseTitle", job.getTitle());
             req.setAttribute("courseCode", job.getCourseCode());
