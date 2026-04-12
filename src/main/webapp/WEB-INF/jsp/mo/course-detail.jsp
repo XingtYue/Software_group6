@@ -95,6 +95,49 @@
                class="btn btn-outline btn-sm mb-4" style="display:inline-block;">&larr; Back to Courses</a>
             <h2 class="text-2xl mb-1">${courseTitle != null ? courseTitle : 'Course Title'}</h2>
             <p class="text-gray-600">Code: ${courseCode != null ? courseCode : ''}</p>
+
+            <%
+              java.util.Map<String,String> job = (java.util.Map<String,String>) request.getAttribute("job");
+              if (job != null) {
+            %>
+            <div style="margin-top:20px;padding:16px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                <h3 style="font-size:15px;font-weight:600;color:#374151;margin:0;">Job Details</h3>
+                <button id="toggleJobDetails" onclick="toggleJobDetails()"
+                        style="background:none;border:1px solid #d1d5db;border-radius:6px;padding:4px 12px;cursor:pointer;font-size:13px;color:#6b7280;transition:all 0.2s;">
+                  <span id="toggleIcon">▼</span> <span id="toggleText">Collapse</span>
+                </button>
+              </div>
+              <div id="jobDetailsContent" style="display:block;">
+                <div style="display:grid;grid-template-columns:120px 1fr;gap:8px;font-size:14px;">
+                  <span style="color:#6b7280;font-weight:500;">Department:</span>
+                  <span style="color:#111827;"><%= job.get("department") != null && !job.get("department").isEmpty() ? job.get("department") : "N/A" %></span>
+
+                  <span style="color:#6b7280;font-weight:500;">Hours:</span>
+                  <span style="color:#111827;"><%= job.get("hours") != null && !job.get("hours").isEmpty() ? job.get("hours") : "N/A" %></span>
+
+                  <span style="color:#6b7280;font-weight:500;">Duration:</span>
+                  <span style="color:#111827;"><%= job.get("duration") != null && !job.get("duration").isEmpty() ? job.get("duration") : "N/A" %></span>
+
+                  <span style="color:#6b7280;font-weight:500;">Posted By:</span>
+                  <span style="color:#111827;"><%= job.get("postedBy") != null && !job.get("postedBy").isEmpty() ? job.get("postedBy") : "N/A" %></span>
+
+                  <span style="color:#6b7280;font-weight:500;">Posted Date:</span>
+                  <span style="color:#111827;"><%= job.get("postedDate") != null && !job.get("postedDate").isEmpty() ? job.get("postedDate") : "N/A" %></span>
+
+                  <span style="color:#6b7280;font-weight:500;">Status:</span>
+                  <span style="color:#111827;"><%= job.get("status") != null && !job.get("status").isEmpty() ? job.get("status") : "active" %></span>
+                </div>
+
+                <% if (job.get("description") != null && !job.get("description").isEmpty()) { %>
+                <div style="margin-top:12px;">
+                  <span style="color:#6b7280;font-weight:500;font-size:14px;">Description:</span>
+                  <p style="margin-top:4px;color:#374151;font-size:14px;line-height:1.6;white-space:pre-wrap;"><%= job.get("description") %></p>
+                </div>
+                <% } %>
+              </div>
+            </div>
+            <% } %>
           </div>
         </div>
 
@@ -365,6 +408,22 @@ function showDecided(type) {
   if (section) section.classList.add('active');
   var btn = document.querySelector('.filter-btn[data-type="' + type + '"]');
   if (btn) btn.classList.add(type === 'accepted' ? 'active-green' : 'active-red');
+}
+
+function toggleJobDetails() {
+  var content = document.getElementById('jobDetailsContent');
+  var icon = document.getElementById('toggleIcon');
+  var text = document.getElementById('toggleText');
+
+  if (content.style.display === 'none') {
+    content.style.display = 'block';
+    icon.textContent = '▼';
+    text.textContent = 'Collapse';
+  } else {
+    content.style.display = 'none';
+    icon.textContent = '▶';
+    text.textContent = 'Expand';
+  }
 }
 </script>
 </body>
