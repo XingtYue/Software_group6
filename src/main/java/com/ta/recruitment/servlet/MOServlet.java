@@ -21,6 +21,7 @@ public class MOServlet extends BaseServlet {
         String userId = (String) req.getSession().getAttribute("userId");
 
         if (path.equals("/applicants") || path.equals("/applicants/")) {
+            // List all jobs with applicant counts, categorized by ownership
             List<Job> allJobs = ds.getAllJobs();
             List<Map<String,String>> myJobMaps = new ArrayList<>();
             List<Map<String,String>> otherJobMaps = new ArrayList<>();
@@ -30,11 +31,12 @@ public class MOServlet extends BaseServlet {
                 Map<String,String> m = new LinkedHashMap<>(j.toMap());
                 List<Application> jobApps = ds.getApplicationsByJob(j.getJobId());
                 m.put("applicantCount", String.valueOf(jobApps.size()));
+   
                 if (userId.equals(j.getPostedBy())) {
                     myJobMaps.add(m);
                     if ("active".equals(j.getStatus())) activeCourses++;
                     for (Application a : jobApps) {
-                        if ("pending".equals(a.getStatus()))   pendingReviews++;
+                        if ("pending".equals(a.getStatus())) pendingReviews++;
                         else if ("accepted".equals(a.getStatus())) acceptedTAs++;
                     }
                 } else {
