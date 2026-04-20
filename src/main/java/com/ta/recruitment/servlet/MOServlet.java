@@ -31,12 +31,11 @@ public class MOServlet extends BaseServlet {
                 Map<String,String> m = new LinkedHashMap<>(j.toMap());
                 List<Application> jobApps = ds.getApplicationsByJob(j.getJobId());
                 m.put("applicantCount", String.valueOf(jobApps.size()));
-   
                 if (userId.equals(j.getPostedBy())) {
                     myJobMaps.add(m);
                     if ("active".equals(j.getStatus())) activeCourses++;
                     for (Application a : jobApps) {
-                        if ("pending".equals(a.getStatus())) pendingReviews++;
+                        if ("pending".equals(a.getStatus()))   pendingReviews++;
                         else if ("accepted".equals(a.getStatus())) acceptedTAs++;
                     }
                 } else {
@@ -77,6 +76,7 @@ public class MOServlet extends BaseServlet {
             req.setAttribute("pendingCount",    pending);
             req.setAttribute("acceptedCount",   accepted);
             req.setAttribute("rejectedCount",   rejected);
+            req.setAttribute("isOwner",         userId.equals(job.getPostedBy()));
             req.getRequestDispatcher("/WEB-INF/jsp/mo/course-detail.jsp").forward(req, resp);
 
         } else if (path.equals("/post-job") || path.equals("/post-job/")) {
@@ -146,8 +146,11 @@ public class MOServlet extends BaseServlet {
             if (appId != null && action != null) {
                 Application existing = ds.findApplicationById(appId);
                 if (existing != null && "pending".equals(existing.getStatus())) {
-                    if ("accept".equals(action))      ds.updateApplicationStatus(appId, "accepted");
-                    else if ("reject".equals(action)) ds.updateApplicationStatus(appId, "rejected");
+                    Job appJob = ds.findJobByJobId(existing.getJobId());
+                    if (appJob != null && userId.equals(appJob.getPostedBy())) {
+                        if ("accept".equals(action))      ds.updateApplicationStatus(appId, "accepted");
+                        else if ("reject".equals(action)) ds.updateApplicationStatus(appId, "rejected");
+                    }
                 }
             }
             String redirect = jobId != null ? "/mo/courses/" + jobId : "/mo/applicants";
