@@ -152,6 +152,8 @@
               if (pendingApplicants  == null) pendingApplicants  = new ArrayList<Map<String,String>>();
               if (acceptedApplicants == null) acceptedApplicants = new ArrayList<Map<String,String>>();
               if (rejectedApplicants == null) rejectedApplicants = new ArrayList<Map<String,String>>();
+              Boolean isOwner = (Boolean) request.getAttribute("isOwner");
+              if (isOwner == null) isOwner = false;
             %>
 
             <!-- ===== PENDING SECTION ===== -->
@@ -178,6 +180,7 @@
                 <div class="applicant-actions">
                   <button type="button" class="btn btn-outline btn-sm"
                           onclick="showDetails('<%= app.get("id") %>')">View Details</button>
+                  <% if (isOwner) { %>
                   <form action="${pageContext.request.contextPath}/mo/select/action"
                         method="post" style="display:inline;">
                     <input type="hidden" name="appId"  value="<%= app.get("id") %>">
@@ -192,6 +195,15 @@
                     <input type="hidden" name="action" value="reject">
                     <button type="submit" class="btn btn-outline-red btn-sm">Reject</button>
                   </form>
+                  <% } else { %>
+                  <span class="lock-notice">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="3" y="11" width="18" height="11" rx="2"/>
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                    </svg>
+                    View only
+                  </span>
+                  <% } %>
                 </div>
               </div>
             </div>

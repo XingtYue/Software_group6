@@ -1,7 +1,7 @@
 [
   {"id":"732555876","jobId":"1","jobTitle":"TA for Software Engineering (EBU6304)","taId":"u4","taName":"Alice Chen","taEmail":"ta1@bupt.edu.cn","status":"pending","appliedDate":"2026-03-31","coverLetter":"","cvFileName":""},
   {"id":"73255650","jobId":"1","jobTitle":"TA for Software Engineering (EBU6304)","taId":"u5","taName":"Bob Wang","taEmail":"ta2@bupt.edu.cn","status":"accepted","appliedDate":"2026-03-31","coverLetter":"","cvFileName":""},
-  {"id":"7325596","jobId":"2","jobTitle":"TA for Data Structures (EBU5476)","taId":"u4","taName":"Alice Chen","taEmail":"ta1@bupt.edu.cn","status":"pending","appliedDate":"2026-03-31","coverLetter":"","cvFileName":""},
+  {"id":"7325596","jobId":"2","jobTitle":"TA for Data Structures (EBU5476)","taId":"u4","taName":"Alice Chen","taEmail":"ta1@bupt.edu.cn","status":"accepted","appliedDate":"2026-03-31","coverLetter":"","cvFileName":""},
   {"id":"701986873","jobId":"4","jobTitle":"Invigilation Assistant","taId":"u4","taName":"Alice Chen","taEmail":"ta1@bupt.edu.cn","status":"accepted","appliedDate":"2026-04-09","coverLetter":"123","cvFileName":"u4_732554315_1775731701985.pdf"},
   {"id":"181017478","jobId":"3","jobTitle":"TA for Web Development (EBU6301)","taId":"u4","taName":"Alice Chen","taEmail":"ta1@bupt.edu.cn","status":"rejected","appliedDate":"2026-04-09","coverLetter":"","cvFileName":"u4_cv_1775737181015.pdf"},
   {"id":"922816195","jobId":"1","jobTitle":"TA for Software Engineering (EBU6304)","taId":"u6","taName":"Carol Li","taEmail":"ta3@bupt.edu.cn","status":"accepted","appliedDate":"2026-04-11","coverLetter":"","cvFileName":"u6_cv_1775903922813.pdf"},
