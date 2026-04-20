@@ -21,6 +21,7 @@ public class MOServlet extends BaseServlet {
         String userId = (String) req.getSession().getAttribute("userId");
 
         if (path.equals("/applicants") || path.equals("/applicants/")) {
+            // List all jobs with applicant counts, categorized by ownership
             List<Job> allJobs = ds.getAllJobs();
             List<Map<String,String>> myJobMaps = new ArrayList<>();
             List<Map<String,String>> otherJobMaps = new ArrayList<>();
