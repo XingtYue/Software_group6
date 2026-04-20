@@ -104,12 +104,12 @@
               <% if (myJobs != null && !myJobs.isEmpty()) {
                 for (Map<String,String> course : myJobs) {
               %>
-              <a href="${pageContext.request.contextPath}/mo/courses/<%= course.get("id") %>"
+              <a href="${pageContext.request.contextPath}/mo/courses/<%= course.get("jobId") %>"
                  style="text-decoration:none;color:inherit;">
                 <div class="course-card">
                   <div>
                     <h3 style="font-size:16px;font-weight:500;margin-bottom:4px;"><%= course.get("title") %></h3>
-                    <p class="text-sm text-gray-600">Code: <%= course.get("code") %></p>
+                    <p class="text-sm text-gray-600">Code: <%= course.get("courseCode") %></p>
                     <p class="course-meta">Department: <%= course.get("department") %> | Posted: <%= course.get("postedDate") %></p>
                   </div>
                   <div style="text-align:right;">
@@ -135,12 +135,12 @@
                 if (myJobs != null) {
                   for (Map<String,String> course : myJobs) {
               %>
-              <a href="${pageContext.request.contextPath}/mo/courses/<%= course.get("id") %>"
+              <a href="${pageContext.request.contextPath}/mo/courses/<%= course.get("jobId") %>"
                  style="text-decoration:none;color:inherit;">
                 <div class="course-card">
                   <div>
                     <h3 style="font-size:16px;font-weight:500;margin-bottom:4px;"><%= course.get("title") %></h3>
-                    <p class="text-sm text-gray-600">Code: <%= course.get("code") %></p>
+                    <p class="text-sm text-gray-600">Code: <%= course.get("courseCode") %></p>
                     <p class="course-meta">Posted by: You | Department: <%= course.get("department") %> | <%= course.get("postedDate") %></p>
                   </div>
                   <div style="text-align:right;">
@@ -156,12 +156,12 @@
                 if (otherJobs != null) {
                   for (Map<String,String> course : otherJobs) {
               %>
-              <a href="${pageContext.request.contextPath}/mo/courses/<%= course.get("id") %>"
+              <a href="${pageContext.request.contextPath}/mo/courses/<%= course.get("jobId") %>"
                  style="text-decoration:none;color:inherit;">
                 <div class="course-card">
                   <div>
                     <h3 style="font-size:16px;font-weight:500;margin-bottom:4px;"><%= course.get("title") %></h3>
-                    <p class="text-sm text-gray-600">Code: <%= course.get("code") %></p>
+                    <p class="text-sm text-gray-600">Code: <%= course.get("courseCode") %></p>
                     <p class="course-meta">Posted by: <%= course.get("postedBy") %> | Department: <%= course.get("department") %> | <%= course.get("postedDate") %></p>
                   </div>
                   <div style="text-align:right;">
