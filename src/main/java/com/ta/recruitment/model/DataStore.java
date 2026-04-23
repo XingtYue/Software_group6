@@ -236,6 +236,38 @@ public class DataStore {
     }
 
     // ==================== APPLICATION OPERATIONS ====================
+    /**
+     * 校验：TA是否重复申请了同一个岗位
+     * @param taId 申请人TA的ID
+     * @param jobId 申请的岗位ID
+     * @return true=重复申请，false=未申请过
+     */
+    public boolean hasDuplicateApplication(String taId, String jobId) {
+        for (Application a : applications) {
+            // 匹配TA ID和岗位ID，说明已经申请过
+            if (taId.equals(a.getTaId()) && jobId.equals(a.getJobId())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 统计：TA在同一个课程下已经申请了多少个岗位
+     * @param taId 申请人TA的ID
+     * @param courseCode 课程编号
+     * @return 已申请的岗位数量
+     */
+    public int countApplicationsInSameCourse(String taId, String courseCode) {
+        int count = 0;
+        for (Application a : applications) {
+            // 匹配TA ID和课程编号，统计数量
+            if (taId.equals(a.getTaId()) && courseCode.equals(a.getCourseCode())) {
+                count++;
+            }
+        }
+        return count;
+    }
 
     public List<Application> getAllApplications() {
         return new ArrayList<>(applications);
@@ -368,53 +400,106 @@ public class DataStore {
     }
 
     private void seedJobs() {
+        // ========== Course 1: Software Engineering EBU6304, MO: Dr. Smith (u2), 3 positions ==========
         Job j1 = new Job();
-        j1.setTitle("TA for Software Engineering (EBU6304)");
-        j1.setDescription("Support students in software engineering labs and tutorials. Help with project guidance and code reviews.");
+        j1.setTitle("Software Engineering - Assignment Grading TA");
+        j1.setCourseName("Software Engineering EBU6304");
+        j1.setPositionType("Assignment Grading");
+        j1.setDescription("Responsible for grading student assignments, organizing error collections, and providing detailed feedback.");
         j1.setDepartment("Computer Science");
         j1.setCourseCode("EBU6304");
-        j1.setHours("10");
+        j1.setHours("4");
         j1.setDuration("Full Academic Year");
         j1.setPostedBy("u2");
         j1.setPostedByName("Dr. Smith");
-        j1.setRequirements(Arrays.asList("Strong Java skills", "Experience with Agile methods", "Available 10 hours/week"));
+        j1.setRequirements(Arrays.asList("Strong Java skills", "Responsible and patient", "Good communication skills"));
         addJob(j1);
 
         Job j2 = new Job();
-        j2.setTitle("TA for Data Structures (EBU5476)");
-        j2.setDescription("Assist students with data structures and algorithms coursework.");
+        j2.setTitle("Software Engineering - Lab Assessment TA");
+        j2.setCourseName("Software Engineering EBU6304");
+        j2.setPositionType("Lab Assessment");
+        j2.setDescription("Responsible for student project assessment, code review, and Q&A in weekly lab sessions.");
         j2.setDepartment("Computer Science");
-        j2.setCourseCode("EBU5476");
-        j2.setHours("8");
-        j2.setDuration("Semester 1");
+        j2.setCourseCode("EBU6304");
+        j2.setHours("6");
+        j2.setDuration("Full Academic Year");
         j2.setPostedBy("u2");
         j2.setPostedByName("Dr. Smith");
-        j2.setRequirements(Arrays.asList("Strong algorithms knowledge", "Python or Java proficiency"));
+        j2.setRequirements(Arrays.asList("Strong Java skills", "Experience with Agile methods", "Code review experience"));
         addJob(j2);
 
         Job j3 = new Job();
-        j3.setTitle("TA for Web Development (EBU6301)");
-        j3.setDescription("Support web development module with HTML, CSS, JavaScript and Java Servlet topics.");
+        j3.setTitle("Software Engineering - Exam Invigilation TA");
+        j3.setCourseName("Software Engineering EBU6304");
+        j3.setPositionType("Exam Invigilation");
+        j3.setDescription("Responsible for midterm/final exam invigilation, paper distribution and collection, and exam hall order maintenance.");
         j3.setDepartment("Computer Science");
-        j3.setCourseCode("EBU6301");
-        j3.setHours("12");
-        j3.setDuration("Semester 2");
-        j3.setPostedBy("u3");
-        j3.setPostedByName("Dr. Johnson");
-        j3.setRequirements(Arrays.asList("HTML/CSS/JavaScript", "Java Servlet/JSP knowledge", "Good communication skills"));
+        j3.setCourseCode("EBU6304");
+        j3.setHours("2");
+        j3.setDuration("Exam Period");
+        j3.setPostedBy("u2");
+        j3.setPostedByName("Dr. Smith");
+        j3.setRequirements(Arrays.asList("Punctual and reliable", "Strong attention to detail", "Good sense of responsibility"));
         addJob(j3);
 
+        // ========== Course 2: Data Structures EBU5476, MO: Dr. Smith (u2), 2 positions ==========
         Job j4 = new Job();
-        j4.setTitle("Invigilation Assistant");
-        j4.setDescription("Assist with exam invigilation across multiple modules.");
+        j4.setTitle("Data Structures - Assignment Grading TA");
+        j4.setCourseName("Data Structures EBU5476");
+        j4.setPositionType("Assignment Grading");
+        j4.setDescription("Assist in grading student data structure assignments, organizing error collections, and providing detailed feedback.");
         j4.setDepartment("Computer Science");
-        j4.setCourseCode("N/A");
-        j4.setHours("5");
+        j4.setCourseCode("EBU5476");
+        j4.setHours("3");
         j4.setDuration("Semester 1");
-        j4.setPostedBy("u3");
-        j4.setPostedByName("Dr. Johnson");
-        j4.setRequirements(Arrays.asList("Punctual and reliable", "Good attention to detail"));
+        j4.setPostedBy("u2");
+        j4.setPostedByName("Dr. Smith");
+        j4.setRequirements(Arrays.asList("Strong algorithms knowledge", "Python or Java proficiency", "Careful and meticulous"));
         addJob(j4);
+
+        Job j5 = new Job();
+        j5.setTitle("Data Structures - Final Project Assessment TA");
+        j5.setCourseName("Data Structures EBU5476");
+        j5.setPositionType("Project Assessment");
+        j5.setDescription("Responsible for student final project assessment, code review, and defense assistance.");
+        j5.setDepartment("Computer Science");
+        j5.setCourseCode("EBU5476");
+        j5.setHours("5");
+        j5.setDuration("Semester 1");
+        j5.setPostedBy("u2");
+        j5.setPostedByName("Dr. Smith");
+        j5.setRequirements(Arrays.asList("Strong algorithms knowledge", "Code review experience", "Good communication skills"));
+        addJob(j5);
+
+        // ========== Course 3: Web Development EBU6301, MO: Dr. Johnson (u3), 2 positions ==========
+        Job j6 = new Job();
+        j6.setTitle("Web Development - Lab Session TA");
+        j6.setCourseName("Web Development EBU6301");
+        j6.setPositionType("Lab Session Support");
+        j6.setDescription("Support lab sessions for web development module, answer student questions about HTML/CSS/JS and Java Servlet.");
+        j6.setDepartment("Computer Science");
+        j6.setCourseCode("EBU6301");
+        j6.setHours("8");
+        j6.setDuration("Semester 2");
+        j6.setPostedBy("u3");
+        j6.setPostedByName("Dr. Johnson");
+        j6.setRequirements(Arrays.asList("Proficient in HTML/CSS/JavaScript", "Java Servlet/JSP knowledge", "Good tutoring skills"));
+        addJob(j6);
+
+        Job j7 = new Job();
+        j7.setTitle("Web Development - Assignment Grading TA");
+        j7.setCourseName("Web Development EBU6301");
+        j7.setPositionType("Assignment Grading");
+        j7.setDescription("Grade student web page and backend assignments, provide detailed revision suggestions.");
+        j7.setDepartment("Computer Science");
+        j7.setCourseCode("EBU6301");
+        j7.setHours("4");
+        j7.setDuration("Semester 2");
+        j7.setPostedBy("u3");
+        j7.setPostedByName("Dr. Johnson");
+        j7.setRequirements(Arrays.asList("Proficient in HTML/CSS/JavaScript", "Java Servlet/JSP knowledge", "Careful and responsible"));
+        addJob(j7);
     }
 
     private void seedApplications() {
@@ -473,6 +558,8 @@ public class DataStore {
             sb.append("\"description\":\"").append(esc(j.getDescription() != null ? j.getDescription() : "")).append("\",");
             sb.append("\"department\":\"").append(esc(j.getDepartment() != null ? j.getDepartment() : "")).append("\",");
             sb.append("\"courseCode\":\"").append(esc(j.getCourseCode() != null ? j.getCourseCode() : "")).append("\",");
+            sb.append("\"courseName\":\"").append(esc(j.getCourseName() != null ? j.getCourseName() : "")).append("\",");
+            sb.append("\"positionType\":\"").append(esc(j.getPositionType() != null ? j.getPositionType() : "")).append("\",");
             sb.append("\"hours\":\"").append(esc(j.getHours() != null ? j.getHours() : "")).append("\",");
             sb.append("\"duration\":\"").append(esc(j.getDuration() != null ? j.getDuration() : "")).append("\",");
             sb.append("\"postedBy\":\"").append(esc(j.getPostedBy() != null ? j.getPostedBy() : "")).append("\",");
@@ -508,6 +595,9 @@ public class DataStore {
             sb.append("\"taEmail\":\"").append(esc(a.getTaEmail() != null ? a.getTaEmail() : "")).append("\",");
             sb.append("\"status\":\"").append(esc(a.getStatus() != null ? a.getStatus() : "pending")).append("\",");
             sb.append("\"appliedDate\":\"").append(esc(a.getAppliedDate() != null ? a.getAppliedDate() : "")).append("\",");
+            sb.append("\"courseCode\":\"").append(esc(a.getCourseCode() != null ? a.getCourseCode() : "")).append("\",");
+            sb.append("\"courseName\":\"").append(esc(a.getCourseName() != null ? a.getCourseName() : "")).append("\",");
+            sb.append("\"positionType\":\"").append(esc(a.getPositionType() != null ? a.getPositionType() : "")).append("\",");
             sb.append("\"coverLetter\":\"").append(esc(a.getCoverLetter() != null ? a.getCoverLetter() : "")).append("\",");
             sb.append("\"cvFileName\":\"").append(esc(a.getCvFileName() != null ? a.getCvFileName() : "")).append("\"");
             sb.append("}");
@@ -556,6 +646,8 @@ public class DataStore {
             j.setDescription(r.get("description"));
             j.setDepartment(r.get("department"));
             j.setCourseCode(r.get("courseCode"));
+            j.setCourseName(r.get("courseName"));
+            j.setPositionType(r.get("positionType"));
             j.setHours(r.get("hours"));
             j.setDuration(r.get("duration"));
             j.setPostedBy(r.get("postedBy"));
@@ -580,6 +672,9 @@ public class DataStore {
             a.setTaEmail(r.get("taEmail"));
             a.setStatus(r.getOrDefault("status","pending"));
             a.setAppliedDate(r.get("appliedDate"));
+            a.setCourseCode(r.get("courseCode"));
+            a.setCourseName(r.get("courseName"));
+            a.setPositionType(r.get("positionType"));
             a.setCoverLetter(r.get("coverLetter"));
             a.setCvFileName(r.get("cvFileName"));
             list.add(a);

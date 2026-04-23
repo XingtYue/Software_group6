@@ -107,18 +107,52 @@ public class TAServlet extends BaseServlet {
         if (path.startsWith("/apply/")) {
             String jobId = path.substring("/apply/".length());
             Job job = ds.findJobByJobId(jobId);
-            if (job == null || ds.hasApplied(userId, jobId)) {
-                resp.sendRedirect(req.getContextPath() + "/ta/applications");
+
+            // ========== 校验1：岗位是否存在 ==========
+            if (job == null) {
+                resp.sendError(404);
                 return;
             }
+
+            // ========== 校验2：是否重复申请同一岗位 ==========
+            if (ds.hasApplied(userId, jobId)) {
+                req.setAttribute("errorMsg", "You have already applied for this position, duplicate applications are not allowed!");
+                req.setAttribute("job", job.toMap());
+                req.setAttribute("jobId", jobId);
+                req.setAttribute("hasApplied", true);
+                req.setAttribute("requirements", job.getRequirements());
+                req.getRequestDispatcher("/WEB-INF/jsp/ta/job-detail.jsp").forward(req, resp);
+                return;
+            }
+
+// ========== 校验3：同一课程是否超过2个岗位申请 ==========
+            int appliedCount = ds.countApplicationsInSameCourse(userId, job.getCourseCode());
+            if (appliedCount >= 2) {
+                req.setAttribute("errorMsg", "You can apply for a maximum of 2 positions per course, you have reached the application limit!");
+                req.setAttribute("job", job.toMap());
+                req.setAttribute("jobId", jobId);
+                req.setAttribute("hasApplied", false);
+                req.setAttribute("requirements", job.getRequirements());
+                req.getRequestDispatcher("/WEB-INF/jsp/ta/job-detail.jsp").forward(req, resp);
+                return;
+            }
+
+            // ========== 校验通过，创建申请记录 ==========
             User ta = ds.findUserById(userId);
             Application app = new Application();
             app.setJobId(jobId);
             app.setJobTitle(job.getTitle());
+            // ========== 填充新增的课程/岗位字段 ==========
+            app.setCourseCode(job.getCourseCode());
+            app.setCourseName(job.getCourseName());
+            app.setPositionType(job.getPositionType());
+            // ==========================================
             app.setTaId(userId);
             app.setTaName(ta != null ? ta.getName() : "");
             app.setTaEmail(ta != null ? ta.getEmail() : "");
             app.setCoverLetter(req.getParameter("coverLetter"));
+
+            // 保存CV的原有逻辑
             String savedCv = saveCvPart(req.getPart("cv"), userId,
                     getServletContext().getRealPath("/WEB-INF/uploads/cv/"));
             if (savedCv != null) {
@@ -127,6 +161,8 @@ public class TAServlet extends BaseServlet {
             } else if (ta != null && ta.getCvFileName() != null && !ta.getCvFileName().isEmpty()) {
                 app.setCvFileName(ta.getCvFileName());
             }
+
+            // 保存申请
             ds.addApplication(app);
             resp.sendRedirect(req.getContextPath() + "/ta/applications");
 
