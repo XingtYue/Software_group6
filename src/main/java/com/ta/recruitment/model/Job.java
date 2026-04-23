@@ -17,6 +17,8 @@ public class Job {
     private String status; // "active", "closed"
     private String postedDate;
     private List<String> requirements;
+    private String courseName;    // 课程名称（如：软件工程EBU6304），同一课程名称对应同一个MO
+    private String positionType;  // 岗位类型（如：批改作业、监考、验收lab、验收大作业）
 
     public Job() {
         this.requirements = new ArrayList<>();
@@ -62,6 +64,22 @@ public class Job {
     public List<String> getRequirements() { return requirements; }
     public void setRequirements(List<String> requirements) { this.requirements = requirements; }
 
+    public String getCourseName() {
+        return courseName;
+    }
+
+    public void setCourseName(String courseName) {
+        this.courseName = courseName;
+    }
+
+    public String getPositionType() {
+        return positionType;
+    }
+
+    public void setPositionType(String positionType) {
+        this.positionType = positionType;
+    }
+
     public java.util.Map<String,String> toMap() {
         java.util.Map<String,String> m = new java.util.LinkedHashMap<>();
         m.put("id", id);
@@ -70,6 +88,8 @@ public class Job {
         m.put("description", description != null ? description : "");
         m.put("department", department != null ? department : "");
         m.put("courseCode", courseCode != null ? courseCode : "");
+        m.put("courseName", courseName != null ? courseName : "");
+        m.put("positionType", positionType != null ? positionType : "");
         m.put("hours", hours != null ? hours : "");
         m.put("duration", duration != null ? duration : "");
         m.put("postedBy", postedByName != null ? postedByName : "");
