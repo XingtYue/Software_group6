@@ -13,6 +13,8 @@ public class User implements Serializable {
     private String status; // "active", "inactive"
     private String cvFileName;
     private int workload = 0;
+    private String modules = ""; // semicolon-separated "courseCode|courseName" pairs, MO only
+
     public User() {}
 
     public User(String id, String name, String email, String password, String role) {
@@ -54,6 +56,31 @@ public class User implements Serializable {
 
     public int getWorkload() {return workload;}
     public void setWorkload(int workload) {this.workload = workload;}
+
+    public String getModules() { return modules != null ? modules : ""; }
+    public void setModules(String modules) { this.modules = modules != null ? modules : ""; }
+
+    /** Returns list of maps with "code" and "name" keys, parsed from the modules string. */
+    public java.util.List<java.util.Map<String,String>> getModuleList() {
+        java.util.List<java.util.Map<String,String>> list = new java.util.ArrayList<>();
+        if (modules == null || modules.trim().isEmpty()) return list;
+        for (String entry : modules.split(";")) {
+            entry = entry.trim();
+            if (entry.isEmpty()) continue;
+            int sep = entry.indexOf('|');
+            java.util.Map<String,String> m = new java.util.LinkedHashMap<>();
+            if (sep > 0) {
+                m.put("code", entry.substring(0, sep).trim());
+                m.put("name", entry.substring(sep + 1).trim());
+            } else {
+                m.put("code", entry);
+                m.put("name", entry);
+            }
+            list.add(m);
+        }
+        return list;
+    }
+
     public java.util.Map<String,String> toMap() {
         java.util.Map<String,String> m = new java.util.LinkedHashMap<>();
         m.put("id", id);
@@ -64,6 +91,7 @@ public class User implements Serializable {
         m.put("department", department != null ? department : "");
         m.put("phone", phone != null ? phone : "");
         m.put("cvFileName", cvFileName != null ? cvFileName : "");
+        m.put("modules", modules != null ? modules : "");
         return m;
     }
 }

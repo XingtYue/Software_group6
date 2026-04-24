@@ -538,7 +538,8 @@ public class DataStore {
             sb.append("\"department\":\"").append(esc(u.getDepartment() != null ? u.getDepartment() : "")).append("\",");
             sb.append("\"phone\":\"").append(esc(u.getPhone() != null ? u.getPhone() : "")).append("\",");
             sb.append("\"cvFileName\":\"").append(esc(u.getCvFileName() != null ? u.getCvFileName() : "")).append("\",");
-            sb.append("\"workload\":\"").append(esc(String.valueOf(u.getWorkload()))).append("\"");
+            sb.append("\"workload\":\"").append(esc(String.valueOf(u.getWorkload()))).append("\",");
+            sb.append("\"modules\":\"").append(esc(u.getModules())).append("\"");
             sb.append("}");
             if (i < users.size() - 1) sb.append(",");
             sb.append("\n");
@@ -626,6 +627,7 @@ public class DataStore {
             u.setCvFileName(r.get("cvFileName"));
             String wl = r.get("workload");
             u.setWorkload(wl != null && !wl.isEmpty() ? Integer.parseInt(wl) : 0);
+            u.setModules(r.getOrDefault("modules", ""));
             list.add(u);
         }
         return list;

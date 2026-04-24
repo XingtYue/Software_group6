@@ -47,6 +47,8 @@ public class MOServlet extends BaseServlet {
             req.setAttribute("activeCourses",  activeCourses);
             req.setAttribute("pendingReviews", pendingReviews);
             req.setAttribute("acceptedTAs",    acceptedTAs);
+            User moUser = ds.findUserById(userId);
+            if (moUser != null) req.setAttribute("moModules", moUser.getModuleList());
             req.getRequestDispatcher("/WEB-INF/jsp/mo/applicant-list.jsp").forward(req, resp);
 
         } else if (path.startsWith("/courses/")) {
@@ -80,6 +82,8 @@ public class MOServlet extends BaseServlet {
             req.getRequestDispatcher("/WEB-INF/jsp/mo/course-detail.jsp").forward(req, resp);
 
         } else if (path.equals("/post-job") || path.equals("/post-job/")) {
+            User moUser = ds.findUserById(userId);
+            if (moUser != null) req.setAttribute("moModules", moUser.getModuleList());
             req.getRequestDispatcher("/WEB-INF/jsp/mo/post-job.jsp").forward(req, resp);
 
         } else if (path.startsWith("/cv/download")) {
@@ -123,6 +127,8 @@ public class MOServlet extends BaseServlet {
             job.setDescription(req.getParameter("description"));
             job.setDepartment(req.getParameter("department"));
             job.setCourseCode(req.getParameter("courseCode"));
+            job.setCourseName(req.getParameter("courseName"));
+            job.setPositionType(req.getParameter("positionType"));
             job.setHours(req.getParameter("hours"));
             job.setDuration(req.getParameter("duration"));
             job.setPostedBy(userId);

@@ -1,11 +1,13 @@
 [
-  {"id":"u1","name":"Admin User","email":"admin@bupt.edu.cn","password":"admin123","role":"admin","status":"active","department":"Computer Science","phone":"","cvFileName":"","workload":"0"},
-  {"id":"u2","name":"Dr. Smith","email":"mo1@bupt.edu.cn","password":"mo123","role":"mo","status":"active","department":"Computer Science","phone":"","cvFileName":"","workload":"0"},
-  {"id":"u3","name":"Dr. Johnson","email":"mo2@bupt.edu.cn","password":"mo123","role":"mo","status":"active","department":"Computer Science","phone":"","cvFileName":"","workload":"0"},
-  {"id":"u4","name":"Alice Chen","email":"ta1@bupt.edu.cn","password":"ta123","role":"ta","status":"active","department":"Computer Science","phone":"","cvFileName":"","workload":"0"},
-  {"id":"u5","name":"Bob Wang","email":"ta2@bupt.edu.cn","password":"ta123","role":"ta","status":"active","department":"Computer Science","phone":"","cvFileName":"","workload":"0"},
-  {"id":"u6","name":"Carol Li","email":"ta3@bupt.edu.cn","password":"ta123","role":"ta","status":"active","department":"Computer Science","phone":"","cvFileName":"","workload":"0"},
-  {"id":"u7","name":"David Zhang","email":"ta4@bupt.edu.cn","password":"ta123","role":"ta","status":"active","department":"Computer Science","phone":"","cvFileName":"","workload":"0"},
-  {"id":"u8","name":"Emma Liu","email":"ta5@bupt.edu.cn","password":"ta123","role":"ta","status":"active","department":"Computer Science","phone":"","cvFileName":"","workload":"0"},
-  {"id":"u111248687","name":"A","email":"2147243119@qq.com","password":"111111","role":"ta","status":"active","department":"S","phone":"13348924489","cvFileName":"","workload":"0"}
+  {"id":"u1","name":"Admin User","email":"admin@bupt.edu.cn","password":"admin123","role":"admin","status":"active","department":"Computer Science","phone":"","cvFileName":"","workload":"0","modules":""},
+  {"id":"u2","name":"Dr. Smith","email":"mo1@bupt.edu.cn","password":"mo123","role":"mo","status":"active","department":"Computer Science","phone":"","cvFileName":"","workload":"0","modules":"EBU6304|Software Engineering EBU6304;EBU5476|Data Structures EBU5476"},
+  {"id":"u3","name":"Dr. Johnson","email":"mo2@bupt.edu.cn","password":"mo123","role":"mo","status":"active","department":"Computer Science","phone":"","cvFileName":"","workload":"0","modules":"EBU6301|Web Development EBU6301"},
+  {"id":"u4","name":"Alice Chen","email":"ta1@bupt.edu.cn","password":"ta123","role":"ta","status":"active","department":"Computer Science","phone":"","cvFileName":"","workload":"0","modules":""},
+  {"id":"u5","name":"Bob Wang","email":"ta2@bupt.edu.cn","password":"ta123","role":"ta","status":"active","department":"Computer Science","phone":"","cvFileName":"","workload":"0","modules":""},
+  {"id":"u6","name":"Carol Li","email":"ta3@bupt.edu.cn","password":"ta123","role":"ta","status":"active","department":"Computer Science","phone":"","cvFileName":"","workload":"0","modules":""},
+  {"id":"u7","name":"David Zhang","email":"ta4@bupt.edu.cn","password":"ta123","role":"ta","status":"active","department":"Computer Science","phone":"","cvFileName":"","workload":"0","modules":""},
+  {"id":"u8","name":"Emma Liu","email":"ta5@bupt.edu.cn","password":"ta123","role":"ta","status":"active","department":"Computer Science","phone":"","cvFileName":"","workload":"0","modules":""},
+  {"id":"u111248687","name":"A","email":"2147243119@qq.com","password":"111111","role":"ta","status":"active","department":"S","phone":"13348924489","cvFileName":"","workload":"0","modules":""},
+  {"id":"u070857977","name":"QAQ","email":"mo3@bupt.edu.cn","password":"mo1234","role":"mo","status":"active","department":"FOR TEST","phone":"133133133","cvFileName":"","workload":"0","modules":""},
+  {"id":"u423881266","name":"0424","email":"mo4@bupt.edu.cn","password":"MO1234","role":"mo","status":"active","department":"FOR TEST","phone":"11111111","cvFileName":"","workload":"0","modules":"BBU0000|TEST"}
 ]
