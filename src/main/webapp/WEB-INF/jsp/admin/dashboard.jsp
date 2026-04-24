@@ -133,6 +133,10 @@
                           <button type="submit" class="btn btn-outline-green btn-sm">Activate</button>
                         </form>
                         <% } %>
+                        <% if ("mo".equals(role)) { %>
+                        <a href="${pageContext.request.contextPath}/admin/users/<%= user.get("id") %>/modules"
+                           class="btn btn-outline btn-sm" style="color:#7c3aed;border-color:#7c3aed;">Manage Modules</a>
+                        <% } %>
                       </div>
                     </td>
                   </tr>

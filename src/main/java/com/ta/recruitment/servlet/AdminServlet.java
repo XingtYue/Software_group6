@@ -141,6 +141,14 @@ public class AdminServlet extends BaseServlet {
             if (user != null) req.setAttribute("user", user.toMap());
             forward(req, resp, "/WEB-INF/jsp/admin/profile.jsp");
 
+        } else if (path.matches("/users/[^/]+/modules")) {
+            String moId = path.substring("/users/".length(), path.lastIndexOf("/modules"));
+            User mo = ds.findUserById(moId);
+            if (mo == null || !"mo".equals(mo.getRole())) { resp.sendError(404); return; }
+            req.setAttribute("mo", mo);
+            req.setAttribute("moModules", mo.getModuleList());
+            forward(req, resp, "/WEB-INF/jsp/admin/manage-modules.jsp");
+
         } else {
             resp.sendRedirect(req.getContextPath() + "/admin");
         }
@@ -195,6 +203,46 @@ public class AdminServlet extends BaseServlet {
         } else if (path.equals("/profile") || path.equals("/profile/")) {
             String userId = (String) req.getSession().getAttribute("userId");
             handleProfilePost(req, resp, ds, userId, "/WEB-INF/jsp/admin/profile.jsp");
+
+        } else if (path.matches("/users/[^/]+/modules")) {
+            String moId = path.substring("/users/".length(), path.lastIndexOf("/modules"));
+            User mo = ds.findUserById(moId);
+            if (mo == null || !"mo".equals(mo.getRole())) { resp.sendRedirect(req.getContextPath() + "/admin"); return; }
+            String action = req.getParameter("action");
+            String courseCode = req.getParameter("courseCode");
+            String courseName = req.getParameter("courseName");
+            if ("add".equals(action) && courseCode != null && !courseCode.trim().isEmpty()) {
+                String code = courseCode.trim();
+                String name = (courseName != null && !courseName.trim().isEmpty()) ? courseName.trim() : code;
+                String existing = mo.getModules();
+                // Avoid duplicate course codes
+                boolean exists = false;
+                if (existing != null && !existing.isEmpty()) {
+                    for (String entry : existing.split(";")) {
+                        if (entry.startsWith(code + "|") || entry.equals(code)) { exists = true; break; }
+                    }
+                }
+                if (!exists) {
+                    String newModules = (existing == null || existing.isEmpty()) ? code + "|" + name : existing + ";" + code + "|" + name;
+                    mo.setModules(newModules);
+                    ds.updateUser(mo);
+                }
+            } else if ("remove".equals(action) && courseCode != null) {
+                String code = courseCode.trim();
+                String existing = mo.getModules();
+                if (existing != null && !existing.isEmpty()) {
+                    StringBuilder sb = new StringBuilder();
+                    for (String entry : existing.split(";")) {
+                        if (!entry.startsWith(code + "|") && !entry.equals(code)) {
+                            if (sb.length() > 0) sb.append(";");
+                            sb.append(entry);
+                        }
+                    }
+                    mo.setModules(sb.toString());
+                    ds.updateUser(mo);
+                }
+            }
+            resp.sendRedirect(req.getContextPath() + "/admin/users/" + moId + "/modules");
 
         } else {
             resp.sendRedirect(req.getContextPath() + "/admin");
