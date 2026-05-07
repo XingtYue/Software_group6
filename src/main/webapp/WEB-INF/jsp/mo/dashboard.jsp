@@ -7,6 +7,101 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MO Dashboard - TA Recruitment System</title>
   <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
+  <style>
+    .filter-tabs {
+      display: flex;
+      gap: 12px;
+      margin: 24px 0 16px;
+      border-bottom: 2px solid #e5e7eb;
+    }
+    .filter-tab {
+      padding: 10px 20px;
+      background: none;
+      border: none;
+      border-bottom: 3px solid transparent;
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: 500;
+      color: #6b7280;
+      transition: all 0.2s;
+      margin-bottom: -2px;
+    }
+    .filter-tab:hover {
+      color: #374151;
+    }
+    .filter-tab.active {
+      color: #2563eb;
+      border-bottom-color: #2563eb;
+    }
+    .jobs-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 20px;
+      margin-top: 20px;
+    }
+    .job-card {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 20px;
+      transition: box-shadow 0.2s;
+    }
+    .job-card:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .job-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      margin-bottom: 12px;
+    }
+    .job-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #111827;
+      margin-bottom: 4px;
+    }
+    .job-code {
+      font-size: 13px;
+      color: #6b7280;
+    }
+    .job-status {
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .job-status.active {
+      background: #dcfce7;
+      color: #16a34a;
+    }
+    .job-status.closed {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+    .job-info {
+      font-size: 13px;
+      color: #6b7280;
+      margin-bottom: 8px;
+    }
+    .job-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+    }
+    .no-jobs {
+      color: #9ca3af;
+      font-style: italic;
+      padding: 40px;
+      text-align: center;
+    }
+    .job-section {
+      display: none;
+    }
+    .job-section.active {
+      display: block;
+    }
+  </style>
 </head>
 <body>
 <div class="page-wrapper">

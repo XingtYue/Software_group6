@@ -70,6 +70,24 @@ public class RegisterServlet extends HttpServlet {
         user.setDepartment(department.isEmpty() ? "Computer Science" : department);
         user.setStatus("active");
 
+        // MO: save modules entered at registration
+        if ("mo".equals(role)) {
+            String[] codes = request.getParameterValues("moduleCode");
+            String[] names = request.getParameterValues("moduleName");
+            StringBuilder sb = new StringBuilder();
+            if (codes != null) {
+                for (int i = 0; i < codes.length; i++) {
+                    String code = codes[i] != null ? codes[i].trim() : "";
+                    String mname = (names != null && i < names.length && names[i] != null) ? names[i].trim() : code;
+                    if (!code.isEmpty()) {
+                        if (sb.length() > 0) sb.append(";");
+                        sb.append(code).append("|").append(mname.isEmpty() ? code : mname);
+                    }
+                }
+            }
+            user.setModules(sb.toString());
+        }
+
         ds.addUser(user);
 
         // Redirect to login with success message

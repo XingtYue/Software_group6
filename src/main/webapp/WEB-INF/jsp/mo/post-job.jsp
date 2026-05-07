@@ -37,6 +37,18 @@
       </div>
       <% } %>
 
+      <%
+        List<Map<String,String>> moModules = (List<Map<String,String>>) request.getAttribute("moModules");
+        boolean hasModules = moModules != null && !moModules.isEmpty();
+      %>
+
+      <% if (!hasModules) { %>
+      <div style="background:#fef3c7;border:1px solid #fcd34d;color:#92400e;padding:14px 18px;border-radius:8px;margin-bottom:20px;">
+        <strong>No modules assigned.</strong> You have no courses assigned to your account yet.
+        Please contact an administrator to add your modules before posting positions.
+      </div>
+      <% } %>
+
       <div class="card card-p8">
         <h2 class="text-2xl mb-6">Post New Position</h2>
 

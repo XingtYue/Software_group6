@@ -11,6 +11,9 @@ public class Application {
     private String appliedDate;
     private String coverLetter;
     private String cvFileName;
+    private String courseCode;    // 课程编号（和Job的courseCode对应，用于统计）
+    private String courseName;    // 课程名称（前端展示用）
+    private String positionType;  // 申请的岗位类型（前端展示用）
 
     public Application() {
         this.status = "pending";
@@ -46,6 +49,30 @@ public class Application {
     public String getCvFileName() { return cvFileName; }
     public void setCvFileName(String cvFileName) { this.cvFileName = cvFileName; }
 
+    public String getCourseCode() {
+        return courseCode;
+    }
+
+    public void setCourseCode(String courseCode) {
+        this.courseCode = courseCode;
+    }
+
+    public String getCourseName() {
+        return courseName;
+    }
+
+    public void setCourseName(String courseName) {
+        this.courseName = courseName;
+    }
+
+    public String getPositionType() {
+        return positionType;
+    }
+
+    public void setPositionType(String positionType) {
+        this.positionType = positionType;
+    }
+
     public java.util.Map<String,String> toMap() {
         java.util.Map<String,String> m = new java.util.LinkedHashMap<>();
         m.put("id", id);
@@ -59,6 +86,9 @@ public class Application {
         m.put("status", status != null ? status : "pending");
         m.put("appliedDate", appliedDate != null ? appliedDate : "");
         m.put("submittedAt", appliedDate != null ? appliedDate : "");
+        m.put("courseCode", courseCode != null ? courseCode : "");
+        m.put("courseName", courseName != null ? courseName : "");
+        m.put("positionType", positionType != null ? positionType : "");
         m.put("coverLetter", coverLetter != null ? coverLetter : "");
         m.put("cvFileName", cvFileName != null ? cvFileName : "");
         return m;
