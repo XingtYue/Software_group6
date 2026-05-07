@@ -141,13 +141,17 @@ public class AdminServlet extends BaseServlet {
             if (user != null) req.setAttribute("user", user.toMap());
             forward(req, resp, "/WEB-INF/jsp/admin/profile.jsp");
 
+        } else if (path.matches("/users/[^/]+/edit")) {
+            String uid = path.substring("/users/".length(), path.lastIndexOf("/edit"));
+            User u = ds.findUserById(uid);
+            if (u == null) { resp.sendRedirect(req.getContextPath() + "/admin"); return; }
+            req.setAttribute("editUser", u);
+            req.setAttribute("editUserModules", u.getModuleList());
+            forward(req, resp, "/WEB-INF/jsp/admin/edit-user.jsp");
+
         } else if (path.matches("/users/[^/]+/modules")) {
             String moId = path.substring("/users/".length(), path.lastIndexOf("/modules"));
-            User mo = ds.findUserById(moId);
-            if (mo == null || !"mo".equals(mo.getRole())) { resp.sendError(404); return; }
-            req.setAttribute("mo", mo);
-            req.setAttribute("moModules", mo.getModuleList());
-            forward(req, resp, "/WEB-INF/jsp/admin/manage-modules.jsp");
+            resp.sendRedirect(req.getContextPath() + "/admin/users/" + moId + "/edit");
 
         } else {
             resp.sendRedirect(req.getContextPath() + "/admin");
@@ -203,6 +207,87 @@ public class AdminServlet extends BaseServlet {
         } else if (path.equals("/profile") || path.equals("/profile/")) {
             String userId = (String) req.getSession().getAttribute("userId");
             handleProfilePost(req, resp, ds, userId, "/WEB-INF/jsp/admin/profile.jsp");
+
+        } else if (path.matches("/users/[^/]+/edit")) {
+            String uid = path.substring("/users/".length(), path.lastIndexOf("/edit"));
+            User u = ds.findUserById(uid);
+            if (u == null) { resp.sendRedirect(req.getContextPath() + "/admin"); return; }
+            String action = req.getParameter("action");
+            String redirectUrl = req.getContextPath() + "/admin/users/" + uid + "/edit";
+
+            if ("saveInfo".equals(action)) {
+                String name  = req.getParameter("name");
+                String email = req.getParameter("email");
+                String phone = req.getParameter("phone");
+                String dept  = req.getParameter("department");
+                if (name != null && !name.trim().isEmpty()) u.setName(name.trim());
+                if (email != null && !email.trim().isEmpty()) {
+                    String newEmail = email.trim().toLowerCase();
+                    boolean taken = false;
+                    for (User x : ds.getAllUsers()) {
+                        if (!x.getId().equals(uid) && newEmail.equals(x.getEmail() != null ? x.getEmail().toLowerCase() : "")) {
+                            taken = true; break;
+                        }
+                    }
+                    if (!taken) u.setEmail(newEmail);
+                    else { resp.sendRedirect(redirectUrl + "?error=email"); return; }
+                }
+                if (phone != null) u.setPhone(phone.trim());
+                if (dept  != null) u.setDepartment(dept.trim());
+                ds.updateUser(u);
+                resp.sendRedirect(redirectUrl + "?success=info");
+
+            } else if ("changePassword".equals(action)) {
+                String newPwd     = req.getParameter("newPassword");
+                String confirmPwd = req.getParameter("confirmPassword");
+                if (newPwd != null && newPwd.length() >= 4 && newPwd.equals(confirmPwd)) {
+                    u.setPassword(newPwd);
+                    ds.updateUser(u);
+                    resp.sendRedirect(redirectUrl + "?success=pwd");
+                } else {
+                    resp.sendRedirect(redirectUrl + "?error=pwd");
+                }
+
+            } else if ("addModule".equals(action) && "mo".equals(u.getRole())) {
+                String courseCode = req.getParameter("courseCode");
+                String courseName = req.getParameter("courseName");
+                if (courseCode != null && !courseCode.trim().isEmpty()) {
+                    String code  = courseCode.trim();
+                    String mname = (courseName != null && !courseName.trim().isEmpty()) ? courseName.trim() : code;
+                    String existing = u.getModules();
+                    boolean exists = false;
+                    if (existing != null && !existing.isEmpty()) {
+                        for (String entry : existing.split(";"))
+                            if (entry.startsWith(code + "|") || entry.equals(code)) { exists = true; break; }
+                    }
+                    if (!exists) {
+                        u.setModules((existing == null || existing.isEmpty()) ? code + "|" + mname : existing + ";" + code + "|" + mname);
+                        ds.updateUser(u);
+                    }
+                }
+                resp.sendRedirect(redirectUrl + "?success=mod");
+
+            } else if ("removeModule".equals(action) && "mo".equals(u.getRole())) {
+                String code = req.getParameter("courseCode");
+                if (code != null) {
+                    String existing = u.getModules();
+                    if (existing != null && !existing.isEmpty()) {
+                        StringBuilder sb = new StringBuilder();
+                        for (String entry : existing.split(";")) {
+                            if (!entry.startsWith(code.trim() + "|") && !entry.equals(code.trim())) {
+                                if (sb.length() > 0) sb.append(";");
+                                sb.append(entry);
+                            }
+                        }
+                        u.setModules(sb.toString());
+                        ds.updateUser(u);
+                    }
+                }
+                resp.sendRedirect(redirectUrl + "?success=mod");
+
+            } else {
+                resp.sendRedirect(redirectUrl);
+            }
 
         } else if (path.matches("/users/[^/]+/modules")) {
             String moId = path.substring("/users/".length(), path.lastIndexOf("/modules"));
