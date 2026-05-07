@@ -7,25 +7,36 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Job Detail - Admin Portal</title>
   <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
-</head>
+<%!
+  private String jsEsc(String s) {
+    if (s == null) return "";
+    return s.replace("\\", "\\\\")
+            .replace("\"", "\\\"")
+            .replace("\n", "\\n")
+            .replace("\r", "")
+            .replace("<", "\\u003C")
+            .replace(">", "\\u003E");
+  }
+%>
+  private String jsEsc(String s) {
+    if (s == null) return "";
+    return s.replace("\\", "\\\\")
+            .replace("\"", "\\\"")
+            .replace("\n", "\\n")
+            .replace("\r", "")
+            .replace("<", "\\u003C")
+            .replace(">", "\\u003E");
+  }
+%>
 <body>
 <div class="page-wrapper">
-  <header class="site-header">
-    <div class="header-inner">
-      <div class="header-left">
-        <span class="site-title">Admin Portal</span>
-        <nav>
-          <a href="${pageContext.request.contextPath}/admin" class="nav-link">User Management</a>
-          <a href="${pageContext.request.contextPath}/admin/jobs" class="nav-link active">Job Management</a>
-          <a href="${pageContext.request.contextPath}/admin/applications" class="nav-link">Application Management</a>
-          <a href="${pageContext.request.contextPath}/admin/workload" class="nav-link">Workload Management</a>
-        </nav>
-      </div>
-      <div class="header-right">
-        <a href="${pageContext.request.contextPath}/logout" class="btn btn-outline btn-sm">Logout</a>
-      </div>
-    </div>
-  </header>
+  <%@ include file="adminheader.jsp" %>
+  <div class="nav-main-row">
+    <a href="${pageContext.request.contextPath}/admin"              class="nav-link">User Management</a>
+    <a href="${pageContext.request.contextPath}/admin/jobs"         class="nav-link active">Job Management</a>
+    <a href="${pageContext.request.contextPath}/admin/applications" class="nav-link">Application Management</a>
+    <a href="${pageContext.request.contextPath}/admin/workload"     class="nav-link">Workload Management</a>
+  </div>
 
   <main class="main-content" style="overflow-y:auto;">
     <div style="max-width:900px;margin:0 auto;padding:24px;">
@@ -99,16 +110,27 @@
             <p class="text-sm text-gray-600">Email: <%= app.getOrDefault("email","") %></p>
           </div>
           <div class="applicant-actions">
+            <button type="button" class="btn btn-outline btn-sm"
+                    onclick="showDetails('<%= app.get("id") %>')">View Details</button>
             <% if ("pending".equals(appStatus)) { %>
               <form action="${pageContext.request.contextPath}/admin/applications/action" method="post" style="display:inline;">
                 <input type="hidden" name="appId" value="<%= app.get("id") %>">
                 <input type="hidden" name="action" value="accept">
+                <input type="hidden" name="returnTo" value="/admin/jobs/<%= jobId %>">
                 <button type="submit" class="btn btn-green btn-sm">Accept</button>
               </form>
               <form action="${pageContext.request.contextPath}/admin/applications/action" method="post" style="display:inline;">
                 <input type="hidden" name="appId" value="<%= app.get("id") %>">
                 <input type="hidden" name="action" value="reject">
+                <input type="hidden" name="returnTo" value="/admin/jobs/<%= jobId %>">
                 <button type="submit" class="btn btn-outline-red btn-sm">Reject</button>
+              </form>
+            <% } else if ("rejected".equals(appStatus)) { %>
+              <form action="${pageContext.request.contextPath}/admin/applications/action" method="post" style="display:inline;">
+                <input type="hidden" name="appId" value="<%= app.get("id") %>">
+                <input type="hidden" name="action" value="restore">
+                <input type="hidden" name="returnTo" value="/admin/jobs/<%= jobId %>">
+                <button type="submit" class="btn btn-outline-blue btn-sm">Restore</button>
               </form>
             <% } %>
           </div>
@@ -120,5 +142,107 @@
     </div>
   </main>
 </div>
+
+<div id="modal-overlay" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal()">&times;</button>
+    <h3 class="modal-title" id="modal-name"></h3>
+
+    <div class="info-grid">
+      <span class="info-label">Email</span>      <span class="info-value" id="modal-email"></span>
+      <span class="info-label">Phone</span>      <span class="info-value" id="modal-phone"></span>
+      <span class="info-label">Department</span> <span class="info-value" id="modal-dept"></span>
+      <span class="info-label">Job</span>        <span class="info-value" id="modal-job"></span>
+      <span class="info-label">Status</span>     <span class="info-value" id="modal-status"></span>
+      <span class="info-label">Submitted</span>  <span class="info-value" id="modal-submitted"></span>
+    </div>
+
+    <div class="modal-section">
+      <p class="modal-section-title">Cover Letter</p>
+      <div id="modal-cover-wrap">
+        <div class="cover-letter-box" id="modal-cover"></div>
+      </div>
+    </div>
+
+    <div class="modal-section" id="modal-cv-section">
+      <p class="modal-section-title">CV / Resume</p>
+      <a id="modal-cv-link" href="#" target="_blank" class="btn btn-outline btn-sm">
+        View / Download CV
+      </a>
+    </div>
+    <div class="modal-section" id="modal-no-cv-section" style="display:none;">
+      <p class="modal-section-title">CV / Resume</p>
+      <p class="cover-letter-empty">No CV uploaded for this application.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+var ctxPath = "${pageContext.request.contextPath}";
+var appDetails = {
+<%
+  if (applicants != null) {
+    for (int i = 0; i < applicants.size(); i++) {
+      Map<String,String> a = applicants.get(i);
+      String appId = a.get("id");
+      if (appId == null) appId = "";
+%>
+  "<%= appId %>": {
+    name: "<%= jsEsc(a.getOrDefault("name", "")) %>",
+    email: "<%= jsEsc(a.getOrDefault("email", "")) %>",
+    phone: "<%= jsEsc(a.getOrDefault("taPhone", "")) %>",
+    dept: "<%= jsEsc(a.getOrDefault("taDepartment", "")) %>",
+    jobTitle: "<%= jsEsc(a.getOrDefault("jobTitle", "")) %>",
+    status: "<%= jsEsc(a.getOrDefault("status", "")) %>",
+    submittedAt: "<%= jsEsc(a.getOrDefault("submittedAt", "")) %>",
+    cover: "<%= jsEsc(a.getOrDefault("coverLetter", "")) %>",
+    cvFileName: "<%= jsEsc(a.getOrDefault("cvFileName", "")) %>"
+  }<%= i < applicants.size() - 1 ? "," : "" %>
+<%
+    }
+  }
+%>
+};
+
+function capitalize(value) {
+  if (!value) return 'N/A';
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function showDetails(appId) {
+  var d = appDetails[appId];
+  if (!d) return;
+  document.getElementById('modal-name').textContent = d.name || '(No name)';
+  document.getElementById('modal-email').textContent = d.email || 'N/A';
+  document.getElementById('modal-phone').textContent = d.phone || 'N/A';
+  document.getElementById('modal-dept').textContent = d.dept || 'N/A';
+  document.getElementById('modal-job').textContent = d.jobTitle || 'N/A';
+  document.getElementById('modal-status').textContent = capitalize(d.status);
+  document.getElementById('modal-submitted').textContent = d.submittedAt || 'N/A';
+
+  var coverWrap = document.getElementById('modal-cover-wrap');
+  if (d.cover) {
+    coverWrap.innerHTML = '<div class="cover-letter-box" id="modal-cover"></div>';
+    document.getElementById('modal-cover').textContent = d.cover;
+  } else {
+    coverWrap.innerHTML = '<p class="cover-letter-empty">No cover letter provided.</p>';
+  }
+
+  if (d.cvFileName) {
+    document.getElementById('modal-cv-section').style.display = '';
+    document.getElementById('modal-no-cv-section').style.display = 'none';
+    document.getElementById('modal-cv-link').href = ctxPath + '/admin/cv/download?appId=' + encodeURIComponent(appId);
+  } else {
+    document.getElementById('modal-cv-section').style.display = 'none';
+    document.getElementById('modal-no-cv-section').style.display = '';
+  }
+
+  document.getElementById('modal-overlay').classList.add('active');
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('active');
+}
+</script>
 </body>
 </html>

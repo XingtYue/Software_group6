@@ -9,59 +9,56 @@
   <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
 </head>
 <body>
-<nav class="navbar">
-  <div class="navbar-brand">
-    <span class="brand-icon">🎓</span>
-    <span>TA Recruitment</span>
-  </div>
-  <div class="navbar-links">
-    <a href="${pageContext.request.contextPath}/ta/jobs" class="nav-link">Browse Jobs</a>
+<div class="page-wrapper">
+  <%@ include file="taheader.jsp" %>
+
+  <div class="nav-main-row">
+    <a href="${pageContext.request.contextPath}/ta/jobs"         class="nav-link">Browse Jobs</a>
     <a href="${pageContext.request.contextPath}/ta/applications" class="nav-link">My Applications</a>
-    <a href="${pageContext.request.contextPath}/ta/profile" class="nav-link">Profile</a>
-    <a href="${pageContext.request.contextPath}/logout" class="nav-link logout-link">Logout</a>
-  </div>
-</nav>
-
-<div class="page-container">
-  <div class="page-header">
-    <h1 class="page-title">Welcome, ${sessionScope.userName}!</h1>
-    <p class="page-subtitle">Teaching Assistant Portal</p>
   </div>
 
-  <div class="stats-grid">
-    <div class="stat-card">
-      <div class="stat-icon">💼</div>
-      <div class="stat-value">${totalJobs}</div>
-      <div class="stat-label">Available Jobs</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon">📋</div>
-      <div class="stat-value">${myApplications}</div>
-      <div class="stat-label">My Applications</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon">✅</div>
-      <div class="stat-value">${acceptedCount}</div>
-      <div class="stat-label">Accepted</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon">⏳</div>
-      <div class="stat-value">${pendingCount}</div>
-      <div class="stat-label">Pending</div>
-    </div>
-  </div>
+  <main class="main-content" style="overflow-y:auto;">
 
-  <div class="dashboard-actions">
-    <a href="${pageContext.request.contextPath}/ta/jobs" class="btn btn-primary btn-lg">
-      🔍 Browse Available Jobs
-    </a>
-    <a href="${pageContext.request.contextPath}/ta/applications" class="btn btn-secondary btn-lg">
-      📋 View My Applications
-    </a>
-    <a href="${pageContext.request.contextPath}/ta/profile" class="btn btn-outline btn-lg">
-      👤 Update Profile
-    </a>
-  </div>
+    <!-- Welcome Hero -->
+    <div class="welcome-hero">
+      <div class="welcome-hero-inner">
+        <div class="welcome-title">Welcome back, ${sessionScope.userName}</div>
+        <div class="welcome-subtitle">Teaching Assistant Portal &nbsp;·&nbsp; Browse positions and track your applications</div>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">💼</div>
+        <div class="stat-value">${totalJobs}</div>
+        <div class="stat-label">Available Jobs</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">📋</div>
+        <div class="stat-value">${myApplications}</div>
+        <div class="stat-label">My Applications</div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-icon">✅</div>
+        <div class="stat-value green">${acceptedCount}</div>
+        <div class="stat-label">Accepted</div>
+      </div>
+      <div class="stat-card yellow">
+        <div class="stat-icon">⏳</div>
+        <div class="stat-value yellow">${pendingCount}</div>
+        <div class="stat-label">Pending</div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="dashboard-actions">
+      <a href="${pageContext.request.contextPath}/ta/jobs"         class="btn btn-primary btn-lg">Browse Available Jobs</a>
+      <a href="${pageContext.request.contextPath}/ta/applications" class="btn btn-outline btn-lg">View My Applications</a>
+      <a href="${pageContext.request.contextPath}/ta/profile"      class="btn btn-outline btn-lg">Update Profile</a>
+    </div>
+
+  </main>
 </div>
 </body>
 </html>

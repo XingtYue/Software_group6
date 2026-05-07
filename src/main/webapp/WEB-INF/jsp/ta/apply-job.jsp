@@ -35,26 +35,28 @@
               boolean hasCv = userCv != null && !userCv.trim().isEmpty();
             %>
             <% if (hasCv) { %>
-            <div style="margin-top:6px;padding:12px;border:1px solid #d1d5db;border-radius:6px;background:#f9fafb;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-              <span style="font-size:13px;color:#374151;">&#128196; <%= userCv %> <span style="color:#6b7280;">(from your profile)</span></span>
+            <div style="margin-top:6px;padding:13px 16px;border:1px solid #e2e8f0;border-radius:8px;background:#f8fafc;display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+              <span style="font-size:13px;color:#334155;font-weight:500;">&#128196; <%= userCv %> <span style="color:#94a3b8;font-weight:400;">(from your profile)</span></span>
               <a href="${pageContext.request.contextPath}/ta/cv/download" target="_blank" class="btn btn-outline btn-sm">View</a>
             </div>
             <div style="margin-top:4px;">
-              <label style="font-size:13px;color:#6b7280;margin-bottom:6px;display:block;">Update CV (optional — replaces your profile CV)</label>
+              <label style="font-size:13px;color:#64748b;margin-bottom:6px;display:block;font-weight:500;">Update CV (optional — replaces your profile CV)</label>
               <div class="upload-area">
                 <div class="upload-icon">&#128196;</div>
                 <input name="cv" type="file" accept=".pdf,.doc,.docx"
-                       style="display:block;width:100%;font-size:13px;color:#4b5563;margin-top:8px;">
-                <p style="font-size:12px;color:#9ca3af;margin-top:4px;">PDF, DOC or DOCX</p>
+                       style="display:block;width:100%;font-size:13px;color:#475569;margin-top:8px;">
+                <p style="font-size:12px;color:#94a3b8;margin-top:4px;">PDF, DOC or DOCX</p>
               </div>
             </div>
             <% } else { %>
-            <p style="font-size:13px;color:#ef4444;margin-bottom:8px;">You have no CV on file. Please upload your CV below. You can also manage it on your <a href="${pageContext.request.contextPath}/ta/profile">Profile</a> page.</p>
+            <div class="alert alert-warning" style="margin-top:6px;">
+              No CV on file. Please upload your CV below, or manage it on your <a href="${pageContext.request.contextPath}/ta/profile" style="color:#92400e;font-weight:600;">Profile</a> page.
+            </div>
             <div class="upload-area" style="margin-top:4px;">
               <div class="upload-icon">&#128196;</div>
               <input name="cv" type="file" accept=".pdf,.doc,.docx"
-                     style="display:block;width:100%;font-size:13px;color:#4b5563;margin-top:8px;">
-              <p style="font-size:12px;color:#9ca3af;margin-top:4px;">PDF, DOC or DOCX</p>
+                     style="display:block;width:100%;font-size:13px;color:#475569;margin-top:8px;">
+              <p style="font-size:12px;color:#94a3b8;margin-top:4px;">PDF, DOC or DOCX</p>
             </div>
             <% } %>
           </div>
@@ -65,7 +67,7 @@
                       rows="6" placeholder="Why are you interested in this position?"></textarea>
           </div>
 
-          <div class="flex gap-4 pt-4" style="border-top:1px solid #e5e7eb;margin-top:8px;">
+          <div class="flex gap-4 pt-4" style="border-top:1px solid #e2e8f0;margin-top:8px;">
             <button type="submit" class="btn btn-primary">Submit Application</button>
             <a href="${pageContext.request.contextPath}/ta/jobs/<%= jobId %>"
                class="btn btn-outline">Cancel</a>
