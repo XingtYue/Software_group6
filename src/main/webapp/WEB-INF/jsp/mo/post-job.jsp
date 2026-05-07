@@ -10,34 +10,23 @@
 </head>
 <body>
 <div class="page-wrapper">
-   <%@ include file="moheader.jsp" %>
+  <%@ include file="moheader.jsp" %>
 
-   <div class="nav-main-row">
-     <a href="${pageContext.request.contextPath}/mo/applicants" class="nav-link">Review Applicants</a>
-     <a href="${pageContext.request.contextPath}/mo/post-job" class="nav-link active">Post New Position</a>
-   </div>
+  <div class="nav-main-row">
+    <a href="${pageContext.request.contextPath}/mo/applicants" class="nav-link">Review Applicants</a>
+    <a href="${pageContext.request.contextPath}/mo/post-job" class="nav-link active">Post New Position</a>
+  </div>
 
   <main class="main-content" style="overflow-y:auto;">
     <div style="max-width:800px;margin:0 auto;padding:24px;">
 
       <% String success = (String) request.getAttribute("success"); %>
       <% if (success != null) { %>
-        <div class="alert alert-success"><%= success %></div>
+      <div class="alert alert-success"><%= success %></div>
       <% } %>
 
       <%
-        List<Map<String,String>> moModules = (List<Map<String,String>>) request.getAttribute("moModules");
-        boolean hasModules = moModules != null && !moModules.isEmpty();
-      %>
-
-      <% if (!hasModules) { %>
-      <div class="alert alert-warning">
-        <strong>No modules assigned.</strong> You have no courses assigned to your account yet.
-        Please contact an administrator to add your modules before posting positions.
-      </div>
-      <% } %>
-
-      <%
+        // 只定义一次！
         List<Map<String,String>> moModules = (List<Map<String,String>>) request.getAttribute("moModules");
         boolean hasModules = moModules != null && !moModules.isEmpty();
       %>
@@ -143,33 +132,33 @@
 </div>
 
 <script>
-function fillCourseFields(sel) {
-  var val = sel.value;
-  if (!val) {
-    document.getElementById('courseCode').value = '';
-    document.getElementById('courseName').value = '';
-    return;
+  function fillCourseFields(sel) {
+    var val = sel.value;
+    if (!val) {
+      document.getElementById('courseCode').value = '';
+      document.getElementById('courseName').value = '';
+      return;
+    }
+    var parts = val.split('|');
+    document.getElementById('courseCode').value = parts[0] || '';
+    document.getElementById('courseName').value = parts[1] || parts[0] || '';
+
+    // Auto-suggest title if positionType is already selected
+    autoTitle();
   }
-  var parts = val.split('|');
-  document.getElementById('courseCode').value = parts[0] || '';
-  document.getElementById('courseName').value = parts[1] || parts[0] || '';
 
-  // Auto-suggest title if positionType is already selected
-  autoTitle();
-}
-
-function autoTitle() {
-  var courseNameEl = document.getElementById('courseName');
-  var posEl = document.getElementById('positionType');
-  var titleEl = document.getElementById('title');
-  if (!courseNameEl.value || !posEl.value) return;
-  // Only auto-fill if title is still empty
-  if (!titleEl.value) {
-    titleEl.value = courseNameEl.value + ' - ' + posEl.value + ' TA';
+  function autoTitle() {
+    var courseNameEl = document.getElementById('courseName');
+    var posEl = document.getElementById('positionType');
+    var titleEl = document.getElementById('title');
+    if (!courseNameEl.value || !posEl.value) return;
+    // Only auto-fill if title is still empty
+    if (!titleEl.value) {
+      titleEl.value = courseNameEl.value + ' - ' + posEl.value + ' TA';
+    }
   }
-}
 
-document.getElementById('positionType').addEventListener('change', autoTitle);
+  document.getElementById('positionType').addEventListener('change', autoTitle);
 </script>
 </body>
 </html>

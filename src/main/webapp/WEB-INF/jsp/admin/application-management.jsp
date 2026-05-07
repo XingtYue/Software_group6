@@ -172,7 +172,7 @@
   </main>
 </div>
 
-<div id="modal-overlay" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closeModal()">
+<div id="modal-overlay" class="modal-overlay" onclick="if(event.target===this)closeModal()">
   <div class="modal-box">
     <button class="modal-close" onclick="closeModal()">&times;</button>
     <h3 class="modal-title" id="modal-name"></h3>
