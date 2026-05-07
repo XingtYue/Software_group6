@@ -102,6 +102,8 @@
                       <div style="display:flex;gap:8px;flex-wrap:wrap;">
                         <button type="button" class="btn btn-outline btn-sm"
                                 onclick="showUserDetails('<%= user.get("id") %>')">View Details</button>
+                        <a href="${pageContext.request.contextPath}/admin/users/<%= user.get("id") %>/edit"
+                           class="btn btn-outline btn-sm">Edit</a>
                         <% if ("active".equals(status)) { %>
                         <form action="${pageContext.request.contextPath}/admin/users/action" method="post" style="display:inline;">
                           <input type="hidden" name="userId" value="<%= user.get("id") %>">
@@ -114,10 +116,6 @@
                           <input type="hidden" name="action" value="activate">
                           <button type="submit" class="btn btn-outline-green btn-sm">Activate</button>
                         </form>
-                        <% } %>
-                        <% if ("mo".equals(role)) { %>
-                        <a href="${pageContext.request.contextPath}/admin/users/<%= user.get("id") %>/modules"
-                           class="btn btn-outline btn-sm" style="color:#7c3aed;border-color:#7c3aed;">Manage Modules</a>
                         <% } %>
                       </div>
                     </td>
@@ -158,7 +156,7 @@
 </div>
 
 <!-- 弹窗结构 100% 对齐你的申请管理页面 -->
-<div id="modal-overlay" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closeModal()">
+<div id="modal-overlay" class="modal-overlay" onclick="if(event.target===this)closeModal()">
   <div class="modal-box">
     <button class="modal-close" onclick="closeModal()">&times;</button>
     <h3 class="modal-title" id="modal-user-name"></h3>
