@@ -15,15 +15,15 @@
     .module-row input { flex: 1; }
     .remove-module-btn {
       background: none; border: 1px solid #fca5a5; color: #dc2626;
-      border-radius: 4px; padding: 4px 10px; cursor: pointer; font-size: 13px; white-space: nowrap;
+      border-radius: 6px; padding: 5px 11px; cursor: pointer; font-size: 12px; white-space: nowrap; font-weight: 500;
     }
-    .remove-module-btn:hover { background: #fef2f2; }
+    .remove-module-btn:hover { background: #fff1f2; border-color: #f87171; }
     .add-module-btn {
       background: none; border: 1px solid #93c5fd; color: #2563eb;
-      border-radius: 4px; padding: 6px 14px; cursor: pointer; font-size: 13px; margin-top: 4px;
+      border-radius: 6px; padding: 7px 16px; cursor: pointer; font-size: 13px; margin-top: 4px; font-weight: 500;
     }
-    .add-module-btn:hover { background: #eff6ff; }
-    .module-hint { font-size: 12px; color: #9ca3af; margin-top: 4px; }
+    .add-module-btn:hover { background: #eff6ff; border-color: #60a5fa; }
+    .module-hint { font-size: 12px; color: #94a3b8; margin-top: 4px; }
   </style>
 </head>
 <body>

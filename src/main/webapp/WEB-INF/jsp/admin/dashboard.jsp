@@ -8,29 +8,11 @@
   <title>User Management - Admin Portal</title>
   <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
   <style>
-    .modal-overlay {
-      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.5); z-index: 1000;
-      align-items: flex-start; justify-content: center;
-      padding: 40px 16px; box-sizing: border-box; overflow-y: auto;
-    }
-    .modal-overlay.active { display: flex; }
-    .modal-box {
-      background: #fff; border-radius: 8px; padding: 28px;
-      max-width: 640px; width: 100%; position: relative;
-      max-height: 80vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-    }
-    .modal-close {
-      position: absolute; top: 12px; right: 16px; font-size: 24px;
-      cursor: pointer; color: #6b7280; border: none; background: none; line-height: 1;
-    }
-    .modal-title { font-size: 18px; font-weight: 600; margin-bottom: 16px; color: #111827; }
-    .modal-section { margin-top: 16px; padding-top: 16px; border-top: 1px solid #e5e7eb; }
-    .modal-section-title { font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
-    .info-grid { display: grid; grid-template-columns: 110px 1fr; gap: 5px 12px; }
-    .info-label { font-size: 13px; color: #9ca3af; }
-    .info-value { font-size: 13px; color: #111827; word-break: break-word; }
-    .cover-letter-empty { font-size: 13px; color: #9ca3af; font-style: italic; }
+    /* modal styles are in style.css */
+    .info-grid { display: grid; grid-template-columns: 110px 1fr; gap: 6px 14px; }
+    .info-label { font-size: 12px; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+    .info-value { font-size: 13px; color: #1e293b; word-break: break-word; }
+    .cover-letter-empty { font-size: 13px; color: #94a3b8; font-style: italic; }
   </style>
 </head>
 <%!
@@ -176,7 +158,7 @@
 </div>
 
 <!-- 弹窗结构 100% 对齐你的申请管理页面 -->
-<div id="modal-overlay" class="modal-overlay" onclick="if(event.target===this)closeModal()">
+<div id="modal-overlay" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closeModal()">
   <div class="modal-box">
     <button class="modal-close" onclick="closeModal()">&times;</button>
     <h3 class="modal-title" id="modal-user-name"></h3>

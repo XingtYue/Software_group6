@@ -56,12 +56,13 @@
                     <tr style="<%= isInactive ? "opacity:0.5; background:#f9f9f9;" : "" %>">
                       <td><%= wl.getOrDefault("name","Unknown") %></td>
                       <td style="text-align:center;"><%= wl.getOrDefault("positions","0") %></td>
-                      <td style="text-align:center;">
-                        <div style="display:flex;align-items:center;gap:8px;">
-                          <div style="flex:1;background:#e5e7eb;border-radius:4px;height:8px;overflow:hidden;">
-                            <div style="width:<%= Math.min(hours * 5, 100) %>%;height:100%;background:<%= hours > 15 ? "#ef4444" : hours > 8 ? "#22c55e" : "#3b82f6" %>;border-radius:4px;"></div>
+                      <td>
+                        <div style="display:flex;align-items:center;gap:10px;">
+                          <div class="progress-bar-track" style="flex:1;">
+                            <div class="progress-bar-fill <%= hours > 15 ? "red" : hours > 8 ? "green" : "blue" %>"
+                                 style="width:<%= Math.min(hours * 5, 100) %>%;"></div>
                           </div>
-                          <span style="font-size:13px;min-width:40px;"><%= hours %>h</span>
+                          <span style="font-size:13px;font-weight:600;color:#334155;min-width:36px;"><%= hours %>h</span>
                         </div>
                       </td>
                       <td><span class="badge <%= wlClass %>"><%= wlStatus %></span></td>

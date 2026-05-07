@@ -35,10 +35,10 @@
       <p class="text-sm text-gray-600" style="margin-bottom:20px;">Role: Teaching Assistant</p>
 
       <% if (success != null) { %>
-        <div style="background:#f0fdf4;border:1px solid #86efac;color:#15803d;padding:10px 14px;border-radius:6px;margin-bottom:16px;font-size:13px;"><%= success %></div>
+        <div class="alert alert-success"><%= success %></div>
       <% } %>
       <% if (error != null) { %>
-        <div style="background:#fef2f2;border:1px solid #fca5a5;color:#b91c1c;padding:10px 14px;border-radius:6px;margin-bottom:16px;font-size:13px;"><%= error %></div>
+        <div class="alert alert-error"><%= error %></div>
       <% } %>
 
       <!-- Tabs -->

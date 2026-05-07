@@ -49,24 +49,25 @@
             .replace(">", "\\u003E");
   }
 %>
+  private String jsEsc(String s) {
+    if (s == null) return "";
+    return s.replace("\\", "\\\\")
+            .replace("\"", "\\\"")
+            .replace("\n", "\\n")
+            .replace("\r", "")
+            .replace("<", "\\u003C")
+            .replace(">", "\\u003E");
+  }
+%>
 <body>
 <div class="page-wrapper">
-  <header class="site-header">
-    <div class="header-inner">
-      <div class="header-left">
-        <span class="site-title">Admin Portal</span>
-        <nav>
-          <a href="${pageContext.request.contextPath}/admin" class="nav-link">User Management</a>
-          <a href="${pageContext.request.contextPath}/admin/jobs" class="nav-link active">Job Management</a>
-          <a href="${pageContext.request.contextPath}/admin/applications" class="nav-link">Application Management</a>
-          <a href="${pageContext.request.contextPath}/admin/workload" class="nav-link">Workload Management</a>
-        </nav>
-      </div>
-      <div class="header-right">
-        <a href="${pageContext.request.contextPath}/logout" class="btn btn-outline btn-sm">Logout</a>
-      </div>
-    </div>
-  </header>
+  <%@ include file="adminheader.jsp" %>
+  <div class="nav-main-row">
+    <a href="${pageContext.request.contextPath}/admin"              class="nav-link">User Management</a>
+    <a href="${pageContext.request.contextPath}/admin/jobs"         class="nav-link active">Job Management</a>
+    <a href="${pageContext.request.contextPath}/admin/applications" class="nav-link">Application Management</a>
+    <a href="${pageContext.request.contextPath}/admin/workload"     class="nav-link">Workload Management</a>
+  </div>
 
   <main class="main-content" style="overflow-y:auto;">
     <div style="max-width:900px;margin:0 auto;padding:24px;">
@@ -173,7 +174,7 @@
   </main>
 </div>
 
-<div id="modal-overlay" class="modal-overlay" onclick="if(event.target===this)closeModal()">
+<div id="modal-overlay" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closeModal()">
   <div class="modal-box">
     <button class="modal-close" onclick="closeModal()">&times;</button>
     <h3 class="modal-title" id="modal-name"></h3>

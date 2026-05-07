@@ -145,18 +145,18 @@
               List<Map<String,String>> moModules = (List<Map<String,String>>) request.getAttribute("moModules");
               if (moModules != null && !moModules.isEmpty()) {
             %>
-            <div style="background:#f5f3ff;border:1px solid #ddd6fe;border-radius:8px;padding:14px 18px;margin-bottom:20px;">
-              <div style="font-size:13px;font-weight:600;color:#6d28d9;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em;">My Assigned Modules</div>
+            <div style="background:linear-gradient(135deg,#f5f3ff 0%,#ede9fe 100%);border:1px solid #ddd6fe;border-radius:10px;padding:16px 20px;margin-bottom:20px;box-shadow:0 1px 4px rgba(109,40,217,0.07);">
+              <div style="font-size:11px;font-weight:700;color:#6d28d9;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.07em;">My Assigned Modules</div>
               <div style="display:flex;flex-wrap:wrap;gap:8px;">
                 <% for (Map<String,String> mod : moModules) { %>
-                <span style="background:#ede9fe;color:#5b21b6;font-size:13px;font-weight:500;padding:4px 12px;border-radius:20px;">
-                  <strong><%= mod.get("code") %></strong> &nbsp;<%= mod.get("name") %>
+                <span style="background:#fff;color:#5b21b6;font-size:13px;font-weight:600;padding:5px 14px;border-radius:20px;border:1px solid #ddd6fe;box-shadow:0 1px 3px rgba(109,40,217,0.08);">
+                  <strong><%= mod.get("code") %></strong> &nbsp;<span style="font-weight:400;color:#7c3aed;"><%= mod.get("name") %></span>
                 </span>
                 <% } %>
               </div>
             </div>
             <% } else { %>
-            <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:12px 16px;margin-bottom:20px;font-size:13px;color:#92400e;">
+            <div class="alert alert-warning">
               No modules assigned to your account yet. Contact an administrator to add your courses.
             </div>
             <% } %>

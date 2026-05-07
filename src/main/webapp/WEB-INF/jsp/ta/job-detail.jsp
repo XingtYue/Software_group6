@@ -8,30 +8,7 @@
     <title>Job Detail - TA Portal</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
     <style>
-        /* 新增：岗位类型标签样式 */
-        .position-type-tag {
-            display: inline-block;
-            background: #eef2ff;
-            color: #2F80ED;
-            padding: 4px 10px;
-            border-radius: 4px;
-            font-size: 13px;
-            margin-left: 12px;
-            vertical-align: middle;
-            font-weight: normal;
-        }
-        /* 新增：错误提示样式 */
-        .alert {
-            padding: 12px 16px;
-            border-radius: 6px;
-            margin-bottom: 20px;
-            font-size: 14px;
-        }
-        .alert-error {
-            background: #fef2f2;
-            color: #DC2626;
-            border: 1px solid #fecaca;
-        }
+        /* position-type-tag and alert classes are in style.css */
     </style>
 </head>
 <body>
@@ -118,11 +95,11 @@
 </div>
 
 <!-- Already-applied modal -->
-<div id="alreadyAppliedModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1000;align-items:center;justify-content:center;">
-    <div style="background:#fff;border-radius:10px;padding:28px 32px;max-width:380px;width:90%;box-shadow:0 8px 30px rgba(0,0,0,0.15);text-align:center;">
-        <div style="font-size:36px;margin-bottom:12px;">&#9888;</div>
-        <h3 style="font-size:17px;font-weight:600;margin-bottom:8px;">Already Applied</h3>
-        <p style="font-size:14px;color:#6b7280;margin-bottom:20px;">You have already submitted an application for this position. You cannot apply again.</p>
+<div id="alreadyAppliedModal" class="modal-overlay" style="display:none;">
+    <div class="modal-box" style="max-width:380px;text-align:center;">
+        <div style="font-size:40px;margin-bottom:14px;line-height:1;">&#9888;</div>
+        <h3 class="modal-title" style="text-align:center;">Already Applied</h3>
+        <p style="font-size:14px;color:#64748b;margin-bottom:24px;line-height:1.6;">You have already submitted an application for this position. You cannot apply again.</p>
         <div style="display:flex;gap:10px;justify-content:center;">
             <a href="${pageContext.request.contextPath}/ta/applications" class="btn btn-primary btn-sm">View My Applications</a>
             <button onclick="document.getElementById('alreadyAppliedModal').style.display='none'" class="btn btn-outline btn-sm">Close</button>
@@ -135,7 +112,9 @@
     var applyUrl = '${pageContext.request.contextPath}/ta/apply/<%= jobId %>';
     function handleApply() {
         if (alreadyApplied) {
-            document.getElementById('alreadyAppliedModal').style.display = 'flex';
+            var m = document.getElementById('alreadyAppliedModal');
+            m.style.display = 'flex';
+            m.classList.add('active');
         } else {
             window.location.href = applyUrl;
         }

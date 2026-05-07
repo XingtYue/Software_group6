@@ -56,7 +56,7 @@
                     <h3 class="text-lg"><%= app.getOrDefault("jobTitle","Unknown Job") %></h3>
                     <span class="badge <%= badgeClass %>"><%= statusLabel %></span>
                     <!-- 职位工作量显示 -->
-                    <span class="badge" style="background:#6366f1; color:white;">Workload: <%= jobHours %>h/week</span>
+                    <span class="badge" style="background:linear-gradient(135deg,#4f46e5,#6366f1);color:#fff;border:none;">Workload: <%= jobHours %>h/week</span>
                   </div>
                   <p class="text-gray-600 mb-1">TA: ${ta.name}</p>
                   <p class="text-sm text-gray-500">

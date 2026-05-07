@@ -8,62 +8,18 @@
   <title>Course Applicants - MO Portal</title>
   <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
   <style>
-    .modal-overlay {
-      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.5); z-index: 1000;
-      align-items: flex-start; justify-content: center;
-      padding: 40px 16px; box-sizing: border-box; overflow-y: auto;
-    }
-    .modal-overlay.active { display: flex; }
-    .modal-box {
-      background: #fff; border-radius: 8px; padding: 28px;
-      max-width: 640px; width: 100%; position: relative;
-      max-height: 80vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-    }
-    .modal-close {
-      position: absolute; top: 12px; right: 16px; font-size: 24px;
-      cursor: pointer; color: #6b7280; border: none; background: none; line-height: 1;
-    }
-    .modal-title { font-size: 18px; font-weight: 600; margin-bottom: 16px; color: #111827; }
-    .modal-section { margin-top: 16px; padding-top: 16px; border-top: 1px solid #e5e7eb; }
-    .modal-section-title { font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
-    .info-grid { display: grid; grid-template-columns: 110px 1fr; gap: 5px 12px; }
-    .info-label { font-size: 13px; color: #9ca3af; }
-    .info-value { font-size: 13px; color: #111827; word-break: break-word; }
-    .cover-letter-box {
-      background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px;
-      padding: 12px; font-size: 13px; color: #374151; white-space: pre-wrap;
-      max-height: 220px; overflow-y: auto; line-height: 1.6;
-    }
-    .cover-letter-empty { font-size: 13px; color: #9ca3af; font-style: italic; }
-    .lock-notice {
-      display: flex; align-items: center; gap: 5px;
-      color: #9ca3af; font-size: 12px; font-style: italic;
-      white-space: nowrap;
-    }
-    .section-header {
-      display: flex; align-items: center; gap: 10px;
-      margin: 28px 0 14px; padding-bottom: 8px;
-      border-bottom: 2px solid #e5e7eb;
-    }
-    .section-header:first-of-type { margin-top: 0; }
-    .section-title { font-size: 15px; font-weight: 600; color: #374151; }
-    .section-count {
-      background: #f3f4f6; color: #6b7280;
-      border-radius: 12px; padding: 1px 10px; font-size: 12px;
-    }
-    .decided-filter { display: flex; gap: 8px; margin-bottom: 14px; }
-    .filter-btn {
-      padding: 6px 18px; border-radius: 6px; border: 1px solid #d1d5db;
-      background: #fff; cursor: pointer; font-size: 13px; color: #6b7280;
-      transition: all 0.15s;
-    }
-    .filter-btn:hover { background: #f9fafb; }
-    .filter-btn.active-green { background: #16a34a; color: #fff; border-color: #16a34a; }
-    .filter-btn.active-red   { background: #dc2626; color: #fff; border-color: #dc2626; }
+    /* All modal, lock-notice, section-header, filter-btn, decided-section classes are in style.css */
     .decided-section { display: none; }
     .decided-section.active { display: block; }
-    .no-applicants { color: #9ca3af; font-size: 14px; font-style: italic; padding: 8px 0; }
+    .no-applicants { color: #94a3b8; font-size: 14px; font-style: italic; padding: 8px 0; }
+    .filter-btn {
+      padding: 6px 18px; border-radius: 7px; border: 1px solid #cbd5e1;
+      background: #fff; cursor: pointer; font-size: 13px; color: #64748b;
+      font-weight: 500; transition: all 0.15s;
+    }
+    .filter-btn:hover { background: #f8fafc; border-color: #94a3b8; }
+    .filter-btn.active-green { background: linear-gradient(135deg,#15803d,#16a34a); color:#fff; border-color:#15803d; }
+    .filter-btn.active-red   { background: linear-gradient(135deg,#b91c1c,#dc2626); color:#fff; border-color:#b91c1c; }
   </style>
 </head>
 <%!
@@ -318,7 +274,7 @@
 </div>
 
 <!-- ===== VIEW DETAILS MODAL ===== -->
-<div id="modal-overlay" class="modal-overlay" onclick="if(event.target===this)closeModal()">
+<div id="modal-overlay" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closeModal()">
   <div class="modal-box">
     <button class="modal-close" onclick="closeModal()">&times;</button>
     <h3 class="modal-title" id="modal-name"></h3>

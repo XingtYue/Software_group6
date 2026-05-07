@@ -5,14 +5,15 @@
 --%>
 <style>
   .top-bar {
-    height: 70px;
-    background: #fff;
-    border-bottom: 1px solid #e5e7eb;
+    height: 68px;
+    background: linear-gradient(135deg, #0c1e3c 0%, #1a3a6b 100%);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 24px;
+    padding: 0 28px;
     box-sizing: border-box;
+    box-shadow: 0 2px 12px rgba(10, 20, 50, 0.25);
   }
   .top-bar-left {
     display: flex;
@@ -20,27 +21,38 @@
     gap: 16px;
   }
   .school-logo {
-    height: 50px;
+    height: 44px;
     width: auto;
+    filter: brightness(0) invert(1);
+    opacity: 0.92;
   }
   .top-bar-title {
-    font-size: 22px;
+    font-size: 20px;
     font-weight: 600;
-    color: #111827;
+    color: #fff;
+    letter-spacing: 0.01em;
   }
   .nav-main-row {
-    background: #f9fafb;
-    border-bottom: 1px solid #e5e7eb;
-    padding: 0 24px;
+    background: #fff;
+    border-bottom: 1px solid #dde4ef;
+    padding: 0 28px;
+    box-shadow: 0 1px 4px rgba(15, 30, 60, 0.06);
   }
   .nav-main-row .nav-link {
-    padding: 16px 20px;
+    padding: 15px 20px;
     display: inline-block;
     text-decoration: none;
-    color: #4b5563;
+    color: #64748b;
+    font-size: 14px;
+    font-weight: 500;
+    border-bottom: 2px solid transparent;
+    transition: color 0.18s;
+  }
+  .nav-main-row .nav-link:hover {
+    color: #1e40af;
   }
   .nav-main-row .nav-link.active {
-    color: #2563eb;
+    color: #1e40af;
     font-weight: 600;
     border-bottom: 2px solid #2563eb;
   }

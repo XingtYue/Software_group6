@@ -22,9 +22,19 @@
 
       <% String success = (String) request.getAttribute("success"); %>
       <% if (success != null) { %>
-        <div style="background:#f0fdf4;border:1px solid #86efac;color:#15803d;padding:12px 16px;border-radius:6px;margin-bottom:16px;">
-          <%= success %>
-        </div>
+        <div class="alert alert-success"><%= success %></div>
+      <% } %>
+
+      <%
+        List<Map<String,String>> moModules = (List<Map<String,String>>) request.getAttribute("moModules");
+        boolean hasModules = moModules != null && !moModules.isEmpty();
+      %>
+
+      <% if (!hasModules) { %>
+      <div class="alert alert-warning">
+        <strong>No modules assigned.</strong> You have no courses assigned to your account yet.
+        Please contact an administrator to add your modules before posting positions.
+      </div>
       <% } %>
 
       <%
@@ -122,7 +132,7 @@
             </div>
           </div>
 
-          <div class="flex gap-4 pt-4" style="border-top:1px solid #e5e7eb;margin-top:8px;">
+          <div class="flex gap-4 pt-4" style="border-top:1px solid #e2e8f0;margin-top:8px;">
             <button type="submit" class="btn btn-primary" <%= !hasModules ? "disabled" : "" %>>Post Position</button>
             <a href="${pageContext.request.contextPath}/mo/applicants" class="btn btn-outline">Cancel</a>
           </div>
