@@ -1,4 +1,4 @@
-/* TA Recruitment System - Main Stylesheet */
+/* TA Recruitment System - Main Stylesheet - 丰富背景版 */
 
 * {
   box-sizing: border-box;
@@ -6,14 +6,61 @@
   padding: 0;
 }
 
+/* ========== 超丰富背景：多层渐变 + 动态光晕 + 几何纹理 ========== */
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background-color: #f9fafb;
+  background-color: #eef2f5;
+  background-image:
+    radial-gradient(circle at 20% 30%, rgba(255, 240, 200, 0.4) 0%, rgba(210, 230, 250, 0.2) 50%, transparent 80%),
+    radial-gradient(circle at 85% 70%, rgba(180, 200, 255, 0.35) 0%, rgba(140, 160, 220, 0.15) 40%, transparent 70%),
+    linear-gradient(135deg, #f9f3e8 0%, #e8f0fa 40%, #d9e4f0 100%);
   color: #111827;
   font-size: 14px;
   line-height: 1.5;
+  position: relative;
 }
 
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(circle at 30% 40%, rgba(255, 220, 160, 0.25) 0%, transparent 45%),
+    radial-gradient(circle at 70% 80%, rgba(160, 200, 255, 0.3) 0%, transparent 50%);
+  filter: blur(60px);
+  animation: slowFloat 18s infinite alternate ease-in-out;
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    repeating-linear-gradient(45deg, rgba(100, 100, 120, 0.03) 0px, rgba(100, 100, 120, 0.03) 2px, transparent 2px, transparent 12px),
+    repeating-linear-gradient(-45deg, rgba(80, 80, 100, 0.02) 0px, rgba(80, 80, 100, 0.02) 1px, transparent 1px, transparent 8px);
+}
+
+@keyframes slowFloat {
+  0% { transform: scale(1) translate(0%, 0%); opacity: 0.7; }
+  100% { transform: scale(1.05) translate(2%, 3%); opacity: 1; }
+}
+
+.page-wrapper, .login-page {
+  position: relative;
+  z-index: 1;
+}
+
+/* 以下为原样式所有内容（未做任何改动，仅保证卡片背景为纯白） */
 /* ===== LAYOUT ===== */
 .page-wrapper {
   height: 100vh;
@@ -117,10 +164,12 @@ nav {
 }
 
 /* ===== SIDEBAR ===== */
+/* 右侧边栏 - 毛玻璃半透风格 */
 .sidebar {
   width: 224px;
-  background: #fff;
-  border-left: 1px solid #d1d5db;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  border-left: 1px solid rgba(255, 255, 255, 0.5);
   padding: 16px;
   flex-shrink: 0;
   overflow-y: auto;
@@ -209,107 +258,148 @@ nav {
 .stat-value.gray { color: #374151; }
 
 /* ===== BUTTONS ===== */
+/* 基础按钮 */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 8px 16px;
-  border-radius: 6px;
+  padding: 8px 20px;
+  border-radius: 40px;           /* 大圆角，更现代 */
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   border: 1px solid transparent;
   text-decoration: none;
-  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+  transition: all 0.2s ease;
   white-space: nowrap;
+  gap: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
+/* 主按钮（深色） */
 .btn-primary {
-  background: #111827;
+  background: linear-gradient(135deg, #1f2a3e 0%, #111827 100%);
   color: #fff;
-  border-color: #111827;
+  border: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
 .btn-primary:hover {
-  background: #1f2937;
+  background: linear-gradient(135deg, #2d3a4e 0%, #1f2937 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12);
 }
 
+.btn-primary:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* 描边按钮 */
 .btn-outline {
-  background: #fff;
-  color: #111827;
+  background: transparent;
+  color: #374151;
   border-color: #d1d5db;
+  box-shadow: none;
 }
 
 .btn-outline:hover {
   background: #f9fafb;
+  border-color: #9ca3af;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
 }
 
+/* 红色描边（拒绝/删除） */
 .btn-outline-red {
-  background: #fff;
+  background: transparent;
   color: #dc2626;
-  border-color: #fca5a5;
+  border-color: #fecaca;
 }
 
 .btn-outline-red:hover {
   background: #fef2f2;
+  border-color: #f87171;
+  transform: translateY(-1px);
 }
 
+/* 绿色描边（接受/通过） */
 .btn-outline-green {
-  background: #fff;
+  background: transparent;
   color: #16a34a;
-  border-color: #86efac;
+  border-color: #bbf7d0;
 }
 
 .btn-outline-green:hover {
   background: #f0fdf4;
+  border-color: #4ade80;
+  transform: translateY(-1px);
 }
 
+/* 蓝色描边（恢复/详情） */
 .btn-outline-blue {
-  background: #fff;
+  background: transparent;
   color: #2563eb;
-  border-color: #93c5fd;
+  border-color: #bfdbfe;
 }
 
 .btn-outline-blue:hover {
   background: #eff6ff;
+  border-color: #60a5fa;
+  transform: translateY(-1px);
 }
 
+/* 纯绿色实心按钮（接受） */
 .btn-green {
-  background: #16a34a;
+  background: linear-gradient(135deg, #16a34a, #15803d);
   color: #fff;
-  border-color: #16a34a;
+  border: none;
+  box-shadow: 0 2px 6px rgba(22, 163, 74, 0.2);
 }
 
 .btn-green:hover {
-  background: #15803d;
+  background: linear-gradient(135deg, #15803d, #166534);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 12px rgba(22, 163, 74, 0.25);
 }
 
+/* 纯红色实心按钮（拒绝） */
 .btn-red {
-  background: #dc2626;
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
   color: #fff;
-  border-color: #dc2626;
+  border: none;
+  box-shadow: 0 2px 6px rgba(220, 38, 38, 0.2);
 }
 
 .btn-red:hover {
-  background: #b91c1c;
+  background: linear-gradient(135deg, #b91c1c, #991b1b);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 12px rgba(220, 38, 38, 0.25);
 }
 
+/* 小号按钮 */
 .btn-sm {
-  padding: 5px 10px;
+  padding: 5px 14px;
   font-size: 12px;
+  border-radius: 30px;
 }
 
+/* 大号按钮 */
 .btn-lg {
-  padding: 10px 20px;
+  padding: 10px 28px;
   font-size: 15px;
+  border-radius: 44px;
 }
 
+/* 块级按钮（全宽） */
 .btn-full {
   width: 100%;
+  justify-content: center;
 }
 
+/* 图标按钮（圆形） */
 .btn-icon {
-  background: none;
+  background: transparent;
   border: none;
   cursor: pointer;
   padding: 8px;
@@ -317,12 +407,14 @@ nav {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #374151;
-  transition: background-color 0.15s;
+  color: #4b5563;
+  transition: all 0.2s ease;
 }
 
 .btn-icon:hover {
   background: #f3f4f6;
+  transform: scale(1.05);
+  color: #111827;
 }
 
 /* ===== FORMS ===== */
@@ -873,4 +965,83 @@ tr:last-child td {
   nav {
     flex-wrap: wrap;
   }
+}
+.nav-main-row {
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.6);
+  padding: 0 24px;
+  position: sticky;
+  top: 70px; /* 如果顶部栏高度固定，可以实现滚动吸顶，可选 */
+  z-index: 20;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+/* 调整导航链接颜色与悬停效果 */
+.nav-main-row .nav-link {
+  color: #1f2937;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.nav-main-row .nav-link:hover {
+  color: #2563eb;
+  background: rgba(37, 99, 235, 0.08);
+  border-radius: 8px;
+}
+
+.nav-main-row .nav-link.active {
+  color: #2563eb;
+  border-bottom-color: #2563eb;
+  background: rgba(37, 99, 235, 0.05);
+}
+/* ===== 丰富过滤区背景 - 毛玻璃半透 ===== */
+.content-header {
+  padding: 24px;
+  border-bottom: 1px solid rgba(229, 231, 235, 0.6);
+  background: rgba(245, 240, 235, 0.7);   /* 暖米灰 */
+  backdrop-filter: blur(12px);
+}
+
+/* 可选：让搜索框和按钮组在半透背景上更明显 */
+.content-header .search-input {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: none;
+}
+
+.content-header .filter-group .btn {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: #d1d5db;
+}
+
+.content-header .filter-group .btn-primary {
+  background: linear-gradient(135deg, #1f2a3e, #111827);
+  color: white;
+  border: none;
+}
+/* 覆盖过滤区内的按钮样式 */
+.content-header .filter-group .btn {
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  color: #2d3a4e;
+  box-shadow: none;
+  transition: all 0.2s;
+}
+
+.content-header .filter-group .btn:hover {
+  background: rgba(255, 255, 255, 0.9);
+  transform: translateY(-1px);
+}
+
+/* 激活状态（当前选中的按钮） */
+.content-header .filter-group .btn-primary {
+  background: linear-gradient(135deg, #5c6b7e, #4a5b6e);
+  border: none;
+  color: white;
+  backdrop-filter: none;
+}
+
+.content-header .filter-group .btn-primary:hover {
+  background: linear-gradient(135deg, #1f2a3e, #111827);
 }
