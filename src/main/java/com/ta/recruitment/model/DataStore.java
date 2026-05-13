@@ -318,6 +318,17 @@ public class DataStore {
         }
     }
 
+    public void updateApplicationAiResult(String appId, int score, String matched, String missing, String reasoning) {
+        Application a = findApplicationById(appId);
+        if (a != null) {
+            a.setAiMatchScore(score);
+            a.setAiMatchedSkills(matched);
+            a.setAiMissingSkills(missing);
+            a.setAiReasoning(reasoning);
+            saveApplications();
+        }
+    }
+
     // ==================== WORKLOAD ====================
     public List<Map<String,String>> getWorkloadData() {
         List<Map<String,String>> result = new ArrayList<>();
@@ -600,7 +611,11 @@ public class DataStore {
             sb.append("\"courseName\":\"").append(esc(a.getCourseName() != null ? a.getCourseName() : "")).append("\",");
             sb.append("\"positionType\":\"").append(esc(a.getPositionType() != null ? a.getPositionType() : "")).append("\",");
             sb.append("\"coverLetter\":\"").append(esc(a.getCoverLetter() != null ? a.getCoverLetter() : "")).append("\",");
-            sb.append("\"cvFileName\":\"").append(esc(a.getCvFileName() != null ? a.getCvFileName() : "")).append("\"");
+            sb.append("\"cvFileName\":\"").append(esc(a.getCvFileName() != null ? a.getCvFileName() : "")).append("\",");
+            sb.append("\"aiMatchScore\":\"").append(esc(a.getAiMatchScore() != null ? String.valueOf(a.getAiMatchScore()) : "")).append("\",");
+            sb.append("\"aiMatchedSkills\":\"").append(esc(a.getAiMatchedSkills() != null ? a.getAiMatchedSkills() : "")).append("\",");
+            sb.append("\"aiMissingSkills\":\"").append(esc(a.getAiMissingSkills() != null ? a.getAiMissingSkills() : "")).append("\",");
+            sb.append("\"aiReasoning\":\"").append(esc(a.getAiReasoning() != null ? a.getAiReasoning() : "")).append("\"");
             sb.append("}");
             if (i < applications.size() - 1) sb.append(",");
             sb.append("\n");
@@ -679,6 +694,13 @@ public class DataStore {
             a.setPositionType(r.get("positionType"));
             a.setCoverLetter(r.get("coverLetter"));
             a.setCvFileName(r.get("cvFileName"));
+            String scoreStr = r.get("aiMatchScore");
+            if (scoreStr != null && !scoreStr.isEmpty()) {
+                try { a.setAiMatchScore(Integer.parseInt(scoreStr)); } catch (NumberFormatException ignored) {}
+            }
+            a.setAiMatchedSkills(r.get("aiMatchedSkills"));
+            a.setAiMissingSkills(r.get("aiMissingSkills"));
+            a.setAiReasoning(r.get("aiReasoning"));
             list.add(a);
         }
         return list;
