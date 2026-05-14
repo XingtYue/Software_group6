@@ -14,6 +14,7 @@
     .module-table tr:last-child td { border-bottom: none; }
     .module-table tr:hover td { background: #f9fafb; }
     .code-badge { background: #ede9fe; color: #6d28d9; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 4px; }
+    .pending-badge { background: #fef3c7; color: #92400e; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 4px; }
     .alert-success { background: #f0fdf4; border: 1px solid #86efac; color: #15803d; padding: 10px 14px; border-radius: 6px; margin-bottom: 16px; font-size: 13px; }
     .alert-error   { background: #fef2f2; border: 1px solid #fca5a5; color: #b91c1c; padding: 10px 14px; border-radius: 6px; margin-bottom: 16px; font-size: 13px; }
   </style>
@@ -35,6 +36,8 @@
         com.ta.recruitment.model.User editUser = (com.ta.recruitment.model.User) request.getAttribute("editUser");
         @SuppressWarnings("unchecked")
         List<Map<String,String>> editUserModules = (List<Map<String,String>>) request.getAttribute("editUserModules");
+        @SuppressWarnings("unchecked")
+        List<Map<String,String>> editUserPendingModules = (List<Map<String,String>>) request.getAttribute("editUserPendingModules");
         if (editUser == null) { response.sendRedirect(request.getContextPath() + "/admin"); return; }
         String uid      = editUser.getId();
         String uName    = editUser.getName()       != null ? editUser.getName()       : "";
@@ -72,6 +75,11 @@
           <span style="background:#ede9fe;color:#6d28d9;font-size:11px;padding:1px 6px;border-radius:10px;margin-left:4px;">
             <%= editUserModules != null ? editUserModules.size() : 0 %>
           </span>
+          <% if (editUserPendingModules != null && !editUserPendingModules.isEmpty()) { %>
+          <span style="background:#f59e0b;color:#fff;font-size:11px;padding:1px 6px;border-radius:10px;margin-left:2px;">
+            <%= editUserPendingModules.size() %> pending
+          </span>
+          <% } %>
         </button>
         <% } %>
       </div>
@@ -143,7 +151,54 @@
       <% if (isMo) { %>
       <div id="tab-modules" class="tab-content">
         <% if ("mod".equals(successParam)) { %>
-          <div class="alert-success">Module added successfully.</div>
+          <div class="alert-success">Module changes saved successfully.</div>
+        <% } %>
+
+        <!-- Pending Approval -->
+        <% if (editUserPendingModules != null && !editUserPendingModules.isEmpty()) { %>
+        <div class="card" style="padding:0;overflow:hidden;margin-bottom:24px;border-color:#fde68a;">
+          <div style="padding:16px 20px;border-bottom:1px solid #fde68a;display:flex;justify-content:space-between;align-items:center;background:#fffbeb;">
+            <span style="font-weight:600;font-size:15px;color:#92400e;">&#9888; Pending Approval</span>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <span style="font-size:13px;color:#92400e;"><%= editUserPendingModules.size() %> module(s) awaiting review</span>
+              <form action="<%= baseUrl %>" method="post" style="display:inline;">
+                <input type="hidden" name="action" value="approvePendingModules">
+                <button type="submit" class="btn btn-outline-green btn-sm">Approve All</button>
+              </form>
+              <form action="<%= baseUrl %>" method="post" style="display:inline;">
+                <input type="hidden" name="action" value="rejectPendingModules">
+                <button type="submit" class="btn btn-outline-red btn-sm"
+                        onclick="return confirm('Reject all pending modules?')">Reject All</button>
+              </form>
+            </div>
+          </div>
+          <table class="module-table">
+            <thead><tr><th>Course Code</th><th>Course Name</th><th style="width:160px;"></th></tr></thead>
+            <tbody>
+            <% for (Map<String,String> mod : editUserPendingModules) { %>
+            <tr>
+              <td><span class="pending-badge"><%= mod.get("code") %></span></td>
+              <td><%= mod.get("name") %></td>
+              <td>
+                <div style="display:flex;gap:6px;">
+                  <form action="<%= baseUrl %>" method="post" style="display:inline;">
+                    <input type="hidden" name="action" value="approvePendingModule">
+                    <input type="hidden" name="courseCode" value="<%= mod.get("code") %>">
+                    <button type="submit" class="btn btn-outline-green btn-sm">Approve</button>
+                  </form>
+                  <form action="<%= baseUrl %>" method="post" style="display:inline;">
+                    <input type="hidden" name="action" value="rejectPendingModule">
+                    <input type="hidden" name="courseCode" value="<%= mod.get("code") %>">
+                    <button type="submit" class="btn btn-outline-red btn-sm"
+                            onclick="return confirm('Reject <%= mod.get("code") %>?')">Reject</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            <% } %>
+            </tbody>
+          </table>
+        </div>
         <% } %>
 
         <!-- Current modules -->

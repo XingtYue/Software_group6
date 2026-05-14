@@ -13,6 +13,16 @@
     .info-label { font-size: 12px; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
     .info-value { font-size: 13px; color: #1e293b; word-break: break-word; }
     .cover-letter-empty { font-size: 13px; color: #94a3b8; font-style: italic; }
+    .notif-panel { background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; padding: 16px 20px; margin-bottom: 20px; }
+    .notif-title { font-size: 14px; font-weight: 600; color: #92400e; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+    .notif-badge { background: #f59e0b; color: #fff; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 10px; }
+    .notif-item { background: #fff; border: 1px solid #fde68a; border-radius: 6px; padding: 12px 16px; margin-bottom: 8px; }
+    .notif-item:last-child { margin-bottom: 0; }
+    .notif-item-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+    .notif-mo-name { font-size: 14px; font-weight: 600; color: #1e293b; }
+    .notif-actions { display: flex; gap: 6px; }
+    .notif-courses { font-size: 12px; color: #6b7280; }
+    .notif-course-tag { display: inline-block; background: #ede9fe; color: #6d28d9; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin: 2px; }
   </style>
 </head>
 <%!
@@ -63,6 +73,68 @@
 
         <div class="content-body">
           <div style="max-width:900px;margin:0 auto;">
+
+            <%-- ===== Pending Module Notifications ===== --%>
+            <%
+              @SuppressWarnings("unchecked")
+              java.util.List<java.util.Map<String,String>> pendingModuleUsers =
+                (java.util.List<java.util.Map<String,String>>) request.getAttribute("pendingModuleUsers");
+              if (pendingModuleUsers != null && !pendingModuleUsers.isEmpty()) {
+            %>
+            <div class="notif-panel">
+              <div class="notif-title">
+                &#128276; Pending Module Approval Requests
+                <span class="notif-badge"><%= pendingModuleUsers.size() %></span>
+              </div>
+              <% for (java.util.Map<String,String> pmu : pendingModuleUsers) {
+                   String pmId = pmu.get("id");
+                   String pmName = pmu.get("name");
+                   String pmPending = pmu.get("pendingModules");
+                   // Parse course tags
+                   java.util.List<String> tags = new java.util.ArrayList<String>();
+                   if (pmPending != null && !pmPending.isEmpty()) {
+                     for (String entry : pmPending.split(";")) {
+                       entry = entry.trim();
+                       if (!entry.isEmpty()) tags.add(entry);
+                     }
+                   }
+              %>
+              <div class="notif-item">
+                <div class="notif-item-header">
+                  <div>
+                    <span class="notif-mo-name"><%= pmName %></span>
+                    <span style="font-size:12px;color:#6b7280;margin-left:8px;">requests <%= tags.size() %> module(s)</span>
+                  </div>
+                  <div class="notif-actions">
+                    <form action="${pageContext.request.contextPath}/admin/users/action" method="post" style="display:inline;">
+                      <input type="hidden" name="userId" value="<%= pmId %>">
+                      <input type="hidden" name="action" value="approvePendingModules">
+                      <button type="submit" class="btn btn-outline-green btn-sm">Approve All</button>
+                    </form>
+                    <form action="${pageContext.request.contextPath}/admin/users/action" method="post" style="display:inline;">
+                      <input type="hidden" name="userId" value="<%= pmId %>">
+                      <input type="hidden" name="action" value="rejectPendingModules">
+                      <button type="submit" class="btn btn-outline-red btn-sm"
+                              onclick="return confirm('Reject all pending modules for <%= pmName %>?')">Reject All</button>
+                    </form>
+                    <a href="${pageContext.request.contextPath}/admin/users/<%= pmId %>/edit"
+                       class="btn btn-outline btn-sm">Review</a>
+                  </div>
+                </div>
+                <div class="notif-courses">
+                  <% for (String tag : tags) {
+                       String dispName = tag.contains("|") ? tag.substring(tag.indexOf('|') + 1) : tag;
+                       String dispCode = tag.contains("|") ? tag.substring(0, tag.indexOf('|')) : tag;
+                  %>
+                  <span class="notif-course-tag"><%= dispCode %></span>
+                  <span style="font-size:11px;color:#374151;"><%= dispName %></span>
+                  <% } %>
+                </div>
+              </div>
+              <% } %>
+            </div>
+            <% } %>
+
             <div class="card" style="padding:0;overflow:hidden;">
               <div class="table-wrapper">
                 <table>

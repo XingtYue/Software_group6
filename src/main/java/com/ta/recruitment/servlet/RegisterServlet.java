@@ -70,7 +70,7 @@ public class RegisterServlet extends HttpServlet {
         user.setDepartment(department.isEmpty() ? "Computer Science" : department);
         user.setStatus("active");
 
-        // MO: save modules entered at registration
+        // MO: save modules entered at registration as pending (awaiting admin approval)
         if ("mo".equals(role)) {
             String[] codes = request.getParameterValues("moduleCode");
             String[] names = request.getParameterValues("moduleName");
@@ -85,7 +85,7 @@ public class RegisterServlet extends HttpServlet {
                     }
                 }
             }
-            user.setModules(sb.toString());
+            user.setPendingModules(sb.toString());
         }
 
         ds.addUser(user);

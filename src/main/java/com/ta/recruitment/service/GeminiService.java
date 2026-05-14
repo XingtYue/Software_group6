@@ -11,6 +11,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.Base64;
 
 /**
  * Calls the Google Gemini 2.5 Flash API to analyse how well a TA's CV
@@ -57,14 +58,27 @@ public class GeminiService {
      * analysis results (score, matched/missing skills, reasoning) back
      * onto the supplied {@code application} object.
      *
-     * @param cvContent       plain-text content of the TA's CV / cover letter
+     * @param cvContent       plain-text context (name, dept, cover letter)
      * @param jobRequirements plain-text description of the job requirements
      * @return the same {@code application} instance, enriched with AI fields
      */
     public Application analyzeMatch(String cvContent, String jobRequirements) {
+        return analyzeMatch(cvContent, jobRequirements, null);
+    }
+
+    /**
+     * Overload that also accepts the raw bytes of a PDF CV file.
+     * If {@code cvPdfBytes} is non-null, the PDF is sent as inline_data
+     * alongside the text prompt so Gemini reads the actual resume document.
+     *
+     * @param cvContent       plain-text context (name, dept, cover letter)
+     * @param jobRequirements plain-text description of the job requirements
+     * @param cvPdfBytes      raw bytes of the TA's CV PDF, or null if unavailable
+     */
+    public Application analyzeMatch(String cvContent, String jobRequirements, byte[] cvPdfBytes) {
         Application application = new Application();
 
-        String requestBody = buildRequestBody(cvContent, jobRequirements);
+        String requestBody = buildRequestBody(cvContent, jobRequirements, cvPdfBytes);
 
         try {
             HttpRequest request = HttpRequest.newBuilder()
@@ -84,6 +98,7 @@ public class GeminiService {
             }
 
             String resultJson = extractTextFromResponse(response.body());
+            resultJson = sanitizeJsonString(resultJson);
             populateApplication(application, resultJson);
 
         } catch (InterruptedException e) {
@@ -109,25 +124,30 @@ public class GeminiService {
      * Uses generationConfig.responseMimeType = "application/json" so
      * the model returns bare JSON with no markdown fences.
      */
-    private String buildRequestBody(String cvContent, String jobRequirements) {
-        String prompt = buildPrompt(cvContent, jobRequirements);
-
-        // Escape the prompt so it is safe to embed inside a JSON string
+    private String buildRequestBody(String cvContent, String jobRequirements, byte[] cvPdfBytes) {
+        String prompt = buildPrompt(cvContent, jobRequirements, cvPdfBytes != null);
         String escapedPrompt = escapeJson(prompt);
 
-        // Hand-assembled JSON — no external builder needed
+        // Build the parts array: optionally prepend the PDF, then the text prompt
+        StringBuilder parts = new StringBuilder();
+        if (cvPdfBytes != null && cvPdfBytes.length > 0) {
+            String b64 = Base64.getEncoder().encodeToString(cvPdfBytes);
+            parts.append("{\"inline_data\":{\"mime_type\":\"application/pdf\",\"data\":\"")
+                 .append(b64)
+                 .append("\"}},");
+        }
+        parts.append("{\"text\":\"").append(escapedPrompt).append("\"}");
+
         return "{"
             + "\"contents\":["
             +   "{"
-            +     "\"parts\":["
-            +       "{\"text\":\"" + escapedPrompt + "\"}"
-            +     "]"
+            +     "\"parts\":[" + parts + "]"
             +   "}"
             + "],"
             + "\"generationConfig\":{"
             +   "\"responseMimeType\":\"application/json\","
             +   "\"temperature\":0.2,"
-            +   "\"maxOutputTokens\":1024"
+            +   "\"maxOutputTokens\":2048"
             + "}"
             + "}";
     }
@@ -136,12 +156,16 @@ public class GeminiService {
      * Prompt template designed to produce stable, schema-compliant JSON
      * with exactly 4 fields every time.
      */
-    private String buildPrompt(String cvContent, String jobRequirements) {
+    private String buildPrompt(String cvContent, String jobRequirements, boolean hasPdf) {
+        String cvSection = hasPdf
+            ? "## Candidate CV\nThe candidate's full CV is provided as a PDF document above.\n"
+              + "Additional context:\n" + cvContent
+            : "## Candidate CV / Cover Letter\n" + cvContent;
+
         return "You are an expert academic recruiter evaluating a Teaching Assistant candidate.\n\n"
             + "## Job Requirements\n"
             + jobRequirements + "\n\n"
-            + "## Candidate CV / Cover Letter\n"
-            + cvContent + "\n\n"
+            + cvSection + "\n\n"
             + "## Task\n"
             + "Analyse how well this candidate matches the job requirements.\n"
             + "Return ONLY a single JSON object with EXACTLY these four keys:\n\n"
@@ -226,6 +250,42 @@ public class GeminiService {
     // ---------------------------------------------------------------
     // UTILITIES
     // ---------------------------------------------------------------
+
+    /**
+     * Fixes common issues in Gemini-generated JSON:
+     * replaces literal newlines/tabs inside JSON string values with escape sequences.
+     */
+    private String sanitizeJsonString(String json) {
+        if (json == null) return "{}";
+        // Remove markdown code fences if present
+        json = json.replaceAll("^```json\\s*", "").replaceAll("^```\\s*", "").replaceAll("```\\s*$", "").trim();
+        // Replace literal newlines/tabs inside string values
+        StringBuilder sb = new StringBuilder();
+        boolean inString = false;
+        boolean escape = false;
+        for (int i = 0; i < json.length(); i++) {
+            char c = json.charAt(i);
+            if (escape) {
+                sb.append(c);
+                escape = false;
+            } else if (c == '\\') {
+                sb.append(c);
+                escape = true;
+            } else if (c == '"') {
+                sb.append(c);
+                inString = !inString;
+            } else if (inString && c == '\n') {
+                sb.append("\\n");
+            } else if (inString && c == '\r') {
+                sb.append("\\r");
+            } else if (inString && c == '\t') {
+                sb.append("\\t");
+            } else {
+                sb.append(c);
+            }
+        }
+        return sb.toString();
+    }
 
     /** Escapes a string so it can be safely embedded in a JSON value. */
     private String escapeJson(String s) {

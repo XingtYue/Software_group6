@@ -480,9 +480,10 @@ function toggleJobDetails() {
       })
       .then(function (response) {
         if (!response.ok) {
-          // 服务端返回非 2xx，尝试读错误信息
-          return response.json().then(function (err) {
-            throw new Error(err.error || 'Server error: ' + response.status);
+          return response.text().then(function (text) {
+            var msg;
+            try { msg = JSON.parse(text).error; } catch (e) { msg = null; }
+            throw new Error(msg || 'Server error: ' + response.status);
           });
         }
         return response.json();

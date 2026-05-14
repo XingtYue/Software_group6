@@ -161,6 +161,16 @@ public class DataStore {
         }
     }
 
+    public List<User> getUsersWithPendingModules() {
+        List<User> result = new ArrayList<>();
+        for (User u : users) {
+            if (u.getPendingModules() != null && !u.getPendingModules().trim().isEmpty()) {
+                result.add(u);
+            }
+        }
+        return result;
+    }
+
     public User findUserByEmail(String email) {
         if (email == null) return null;
         for (User u : users) {
@@ -345,14 +355,16 @@ public class DataStore {
                 }
             }
 
-            // 计算工时
+            // 计算工时：hours_per_week × 该岗位 duration 中的周数
             for (Application a : accepted) {
                 Job j = findJobByJobId(a.getJobId());
                 if (j != null && j.getHours() != null) {
                     try {
                         String h = j.getHours().replaceAll("[^0-9]", "");
                         if (!h.isEmpty()) {
-                            totalHours += Integer.parseInt(h);
+                            int hoursPerWeek = Integer.parseInt(h);
+                            int weeks = parseDurationWeekCount(j.getDuration());
+                            totalHours += hoursPerWeek * weeks;
                         }
                     } catch (Exception ignored) {}
                 }
@@ -550,7 +562,8 @@ public class DataStore {
             sb.append("\"phone\":\"").append(esc(u.getPhone() != null ? u.getPhone() : "")).append("\",");
             sb.append("\"cvFileName\":\"").append(esc(u.getCvFileName() != null ? u.getCvFileName() : "")).append("\",");
             sb.append("\"workload\":\"").append(esc(String.valueOf(u.getWorkload()))).append("\",");
-            sb.append("\"modules\":\"").append(esc(u.getModules())).append("\"");
+            sb.append("\"modules\":\"").append(esc(u.getModules())).append("\",");
+            sb.append("\"pendingModules\":\"").append(esc(u.getPendingModules())).append("\"");
             sb.append("}");
             if (i < users.size() - 1) sb.append(",");
             sb.append("\n");
@@ -643,6 +656,7 @@ public class DataStore {
             String wl = r.get("workload");
             u.setWorkload(wl != null && !wl.isEmpty() ? Integer.parseInt(wl) : 0);
             u.setModules(r.getOrDefault("modules", ""));
+            u.setPendingModules(r.getOrDefault("pendingModules", ""));
             list.add(u);
         }
         return list;
@@ -777,6 +791,29 @@ public class DataStore {
     }
 
     // ==================== UTILITIES ====================
+
+    /**
+     * Parses the duration field to a week count.
+     * New format: comma-separated week numbers e.g. "1,2,3,4,5" → count = 5
+     * Legacy text fallback: "Full Academic Year"→18, "Semester 1/2"→9, "Exam Period"→3
+     */
+    private int parseDurationWeekCount(String duration) {
+        if (duration == null || duration.trim().isEmpty()) return 1;
+        // New format: comma-separated integers
+        if (duration.matches("[0-9,\\s]+")) {
+            int count = 0;
+            for (String part : duration.split(",")) {
+                if (!part.trim().isEmpty()) count++;
+            }
+            return count > 0 ? count : 1;
+        }
+        // Legacy text fallback
+        String d = duration.toLowerCase();
+        if (d.contains("full") || d.contains("year")) return 18;
+        if (d.contains("semester")) return 9;
+        if (d.contains("exam")) return 3;
+        return 1;
+    }
 
     private String generateId() {
         return String.valueOf(System.currentTimeMillis()).substring(7) +

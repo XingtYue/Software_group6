@@ -36,7 +36,7 @@
                     <tr>
                       <th>TA Name</th>
                       <th>Accepted Positions</th>
-                      <th>Total Hours/Week</th>
+                      <th>Total Hours (hrs/wk × weeks)</th>
                       <th>Workload Status</th>
                       <th>Action</th>
                     </tr>
@@ -48,8 +48,9 @@
                         for (Map<String,String> wl : workloads) {
                           int hours = 0;
                           try { hours = Integer.parseInt(wl.getOrDefault("totalHours","0")); } catch(Exception e){}
-                          String wlStatus = hours > 15 ? "Overloaded" : hours > 8 ? "Normal" : "Light";
-                          String wlClass = hours > 15 ? "badge-rejected" : hours > 8 ? "badge-accepted" : "badge-pending";
+                          // 阈值：总工时 > 270h(超负荷), > 108h(正常), 否则轻负荷
+                          String wlStatus = hours > 270 ? "Overloaded" : hours > 108 ? "Normal" : "Light";
+                          String wlClass  = hours > 270 ? "badge-rejected" : hours > 108 ? "badge-accepted" : "badge-pending";
                           boolean isInactive = "inactive".equals(wl.get("status"));
                     %>
 
