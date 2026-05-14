@@ -92,17 +92,17 @@
 
             <div class="sidebar">
                 <p class="sidebar-title">OVERVIEW</p>
-                <div class="stat-card">
+                <div class="stat-card blue">
                     <p class="stat-label">Active Applications</p>
-                    <p class="stat-value">${activeApplications}</p>
+                    <p class="stat-value blue">${activeApplications}</p>
+                </div>
+                <div class="stat-card">
+                    <p class="stat-label">Available Jobs</p>
+                    <p class="stat-value">${totalJobs}</p>
                 </div>
                 <div class="stat-card green">
-                    <p class="stat-label">Available Jobs</p>
-                    <p class="stat-value green">${totalJobs}</p>
-                </div>
-                <div class="stat-card">
                     <p class="stat-label">Accepted Positions</p>
-                    <p class="stat-value">${acceptedPositions}</p>
+                    <p class="stat-value green">${acceptedPositions}</p>
                 </div>
 
                 <div class="sidebar-section">

@@ -164,6 +164,18 @@
       display: block;
       margin-bottom: 8px;
     }
+     /* 醒目红色错误提示样式 */
+        .error-alert {
+          background-color: #fef2f2;
+          border: 1px solid #fecdd3;
+          color: #dc2626;
+          padding: 12px 16px;
+          border-radius: 10px;
+          margin-bottom: 20px;
+          font-size: 14px;
+          font-weight: 600;
+          text-align: center;
+        }
   </style>
 </head>
 <body>
@@ -174,18 +186,16 @@
       <h1 class="login-title">TA Recruitment System</h1>
     </div>
 
-    <% String error = (String) request.getAttribute("error"); %>
-    <% if (error != null) { %>
-    <div class="alert alert-error"><%= error %></div>
-    <% } %>
-    <% if ("1".equals(request.getParameter("registered"))) { %>
-    <div class="alert alert-success">Account created successfully. Please log in.</div>
-    <% } %>
-    <% if ("1".equals(request.getParameter("registered"))) { %>
-      <div style="background:#f0fdf4;border:1px solid #86efac;color:#15803d;padding:10px 14px;border-radius:6px;margin-bottom:16px;font-size:13px;">
-        Account created successfully. Please log in.
-      </div>
-    <% } %>
+  <% String error = (String) request.getAttribute("error"); %>
+  <% if (error != null) { %>
+  <div class="alert-error"><%= error %></div>
+  <% } %>
+
+  <% if ("1".equals(request.getParameter("registered"))) { %>
+  <div style="background:#f0fdf4;border:1px solid #86efac;color:#15803d;padding:10px 14px;border-radius:6px;margin-bottom:16px;font-size:13px;">
+    Account created successfully. Please log in.
+  </div>
+  <% } %>
 
     <form action="${pageContext.request.contextPath}/login" method="post">
       <div class="form-group">
