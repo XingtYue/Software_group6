@@ -35,6 +35,11 @@ public class AdminServlet extends BaseServlet {
             req.setAttribute("taCount",    ds.getUsersByRole("ta").size());
             req.setAttribute("moCount",    ds.getUsersByRole("mo").size());
             req.setAttribute("adminCount", ds.getUsersByRole("admin").size());
+
+            // Pending module approval notifications
+            List<User> pendingModuleUsers = ds.getUsersWithPendingModules();
+            req.setAttribute("pendingModuleUsers", toMaps(pendingModuleUsers));
+            req.setAttribute("pendingModuleCount", pendingModuleUsers.size());
             forward(req, resp, "/WEB-INF/jsp/admin/dashboard.jsp");
 
         } else if (path.equals("/jobs") || path.equals("/jobs/")) {
@@ -147,6 +152,7 @@ public class AdminServlet extends BaseServlet {
             if (u == null) { resp.sendRedirect(req.getContextPath() + "/admin"); return; }
             req.setAttribute("editUser", u);
             req.setAttribute("editUserModules", u.getModuleList());
+            req.setAttribute("editUserPendingModules", u.getPendingModuleList());
             forward(req, resp, "/WEB-INF/jsp/admin/edit-user.jsp");
 
         } else if (path.matches("/users/[^/]+/modules")) {
@@ -191,6 +197,23 @@ public class AdminServlet extends BaseServlet {
             if (userId != null && action != null) {
                 if ("deactivate".equals(action)) ds.setUserStatus(userId, "inactive");
                 else if ("activate".equals(action)) ds.setUserStatus(userId, "active");
+                else if ("approvePendingModules".equals(action)) {
+                    User u = ds.findUserById(userId);
+                    if (u != null) {
+                        String pending = u.getPendingModules();
+                        if (pending != null && !pending.trim().isEmpty()) {
+                            String existing = u.getModules();
+                            String merged = (existing == null || existing.trim().isEmpty())
+                                    ? pending : existing + ";" + pending;
+                            u.setModules(merged);
+                            u.setPendingModules("");
+                            ds.updateUser(u);
+                        }
+                    }
+                } else if ("rejectPendingModules".equals(action)) {
+                    User u = ds.findUserById(userId);
+                    if (u != null) { u.setPendingModules(""); ds.updateUser(u); }
+                }
             }
             resp.sendRedirect(req.getContextPath() + "/admin");
 
@@ -285,6 +308,74 @@ public class AdminServlet extends BaseServlet {
                 }
                 resp.sendRedirect(redirectUrl + "?success=mod");
 
+            } else if ("approvePendingModules".equals(action) && "mo".equals(u.getRole())) {
+                String pending = u.getPendingModules();
+                if (pending != null && !pending.trim().isEmpty()) {
+                    String existing = u.getModules();
+                    u.setModules((existing == null || existing.trim().isEmpty()) ? pending : existing + ";" + pending);
+                    u.setPendingModules("");
+                    ds.updateUser(u);
+                }
+                resp.sendRedirect(redirectUrl + "?success=mod");
+
+            } else if ("rejectPendingModules".equals(action) && "mo".equals(u.getRole())) {
+                u.setPendingModules("");
+                ds.updateUser(u);
+                resp.sendRedirect(redirectUrl + "?success=mod");
+
+            } else if ("approvePendingModule".equals(action) && "mo".equals(u.getRole())) {
+                String code = req.getParameter("courseCode");
+                if (code != null && !code.trim().isEmpty()) {
+                    String trimCode = code.trim();
+                    String pending = u.getPendingModules();
+                    String matchedEntry = null;
+                    StringBuilder newPending = new StringBuilder();
+                    if (pending != null && !pending.isEmpty()) {
+                        for (String entry : pending.split(";")) {
+                            if (entry.startsWith(trimCode + "|") || entry.equals(trimCode)) {
+                                matchedEntry = entry;
+                            } else {
+                                if (newPending.length() > 0) newPending.append(";");
+                                newPending.append(entry);
+                            }
+                        }
+                    }
+                    if (matchedEntry != null) {
+                        String existing = u.getModules();
+                        boolean alreadyApproved = false;
+                        if (existing != null && !existing.isEmpty()) {
+                            for (String e : existing.split(";")) {
+                                if (e.startsWith(trimCode + "|") || e.equals(trimCode)) { alreadyApproved = true; break; }
+                            }
+                        }
+                        if (!alreadyApproved) {
+                            u.setModules((existing == null || existing.isEmpty()) ? matchedEntry : existing + ";" + matchedEntry);
+                        }
+                        u.setPendingModules(newPending.toString());
+                        ds.updateUser(u);
+                    }
+                }
+                resp.sendRedirect(redirectUrl + "?success=mod");
+
+            } else if ("rejectPendingModule".equals(action) && "mo".equals(u.getRole())) {
+                String code = req.getParameter("courseCode");
+                if (code != null && !code.trim().isEmpty()) {
+                    String trimCode = code.trim();
+                    String pending = u.getPendingModules();
+                    StringBuilder newPending = new StringBuilder();
+                    if (pending != null && !pending.isEmpty()) {
+                        for (String entry : pending.split(";")) {
+                            if (!entry.startsWith(trimCode + "|") && !entry.equals(trimCode)) {
+                                if (newPending.length() > 0) newPending.append(";");
+                                newPending.append(entry);
+                            }
+                        }
+                    }
+                    u.setPendingModules(newPending.toString());
+                    ds.updateUser(u);
+                }
+                resp.sendRedirect(redirectUrl + "?success=mod");
+
             } else {
                 resp.sendRedirect(redirectUrl);
             }
@@ -293,14 +384,13 @@ public class AdminServlet extends BaseServlet {
             String moId = path.substring("/users/".length(), path.lastIndexOf("/modules"));
             User mo = ds.findUserById(moId);
             if (mo == null || !"mo".equals(mo.getRole())) { resp.sendRedirect(req.getContextPath() + "/admin"); return; }
-            String action = req.getParameter("action");
+            String moAction = req.getParameter("action");
             String courseCode = req.getParameter("courseCode");
             String courseName = req.getParameter("courseName");
-            if ("add".equals(action) && courseCode != null && !courseCode.trim().isEmpty()) {
+            if ("add".equals(moAction) && courseCode != null && !courseCode.trim().isEmpty()) {
                 String code = courseCode.trim();
                 String name = (courseName != null && !courseName.trim().isEmpty()) ? courseName.trim() : code;
                 String existing = mo.getModules();
-                // Avoid duplicate course codes
                 boolean exists = false;
                 if (existing != null && !existing.isEmpty()) {
                     for (String entry : existing.split(";")) {
@@ -312,7 +402,7 @@ public class AdminServlet extends BaseServlet {
                     mo.setModules(newModules);
                     ds.updateUser(mo);
                 }
-            } else if ("remove".equals(action) && courseCode != null) {
+            } else if ("remove".equals(moAction) && courseCode != null) {
                 String code = courseCode.trim();
                 String existing = mo.getModules();
                 if (existing != null && !existing.isEmpty()) {

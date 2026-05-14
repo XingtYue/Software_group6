@@ -302,12 +302,61 @@
       <p class="modal-section-title">CV / Resume</p>
       <p class="cover-letter-empty">No CV uploaded for this application.</p>
     </div>
+
+    <!-- ===== AI 匹配分析 Section ===== -->
+    <div class="modal-section" id="modal-ai-section">
+      <p class="modal-section-title">AI Matching Analysis</p>
+
+      <!-- AI 分析按钮 -->
+      <% if (isOwner) { %>
+      <button id="ai-analyze-btn" type="button" class="btn btn-primary btn-sm" style="margin-bottom:12px;">
+        🤖 Get AI Analysis Report
+      </button>
+      <% } else { %>
+      <p class="cover-letter-empty">Only course owner can trigger AI analysis.</p>
+      <% } %>
+
+      <!-- Loading 提示 -->
+      <div id="ai-loading" style="display:none; padding:12px; background:#fef3c7; border:1px solid #fbbf24; border-radius:6px; color:#92400e; font-size:13px;">
+        ⏳ Analyzing with Gemini AI... Please wait.
+      </div>
+
+      <!-- AI 结果面板 -->
+      <div id="ai-result-panel" style="display:none; padding:16px; background:#f0f9ff; border:1px solid #0ea5e9; border-radius:8px;">
+        <!-- 匹配分数 -->
+        <div style="margin-bottom:12px;">
+          <span style="font-size:14px; font-weight:600; color:#0c4a6e;">Match Score:</span>
+          <span id="ai-score" style="font-size:20px; font-weight:700; color:#0284c7; margin-left:8px;"></span>
+          <span style="font-size:14px; color:#475569;">/100</span>
+        </div>
+
+        <!-- 匹配技能 -->
+        <div style="margin-bottom:10px;">
+          <p style="font-size:13px; font-weight:600; color:#0c4a6e; margin:0 0 4px 0;">✅ Matched Skills:</p>
+          <p id="ai-matched" style="margin:0; font-size:13px; color:#334155; line-height:1.6;"></p>
+        </div>
+
+        <!-- 缺失技能 -->
+        <div style="margin-bottom:10px;">
+          <p style="font-size:13px; font-weight:600; color:#0c4a6e; margin:0 0 4px 0;">⚠️ Missing Skills:</p>
+          <p id="ai-missing" style="margin:0; font-size:13px; color:#334155; line-height:1.6;"></p>
+        </div>
+
+        <!-- 理由 -->
+        <div>
+          <p style="font-size:13px; font-weight:600; color:#0c4a6e; margin:0 0 4px 0;">💡 Reasoning:</p>
+          <p id="ai-reasoning" style="margin:0; font-size:13px; color:#334155; line-height:1.6; white-space:pre-wrap;"></p>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
 <!-- Application data for JavaScript -->
 <script>
 var ctxPath = "${pageContext.request.contextPath}";
+var currentAppId = null;  // 当前 modal 打开的 appId
 var appDetails = {
 <%
   List<Map<String,String>> allApps = new ArrayList<Map<String,String>>();
@@ -335,6 +384,16 @@ var appDetails = {
 function showDetails(appId) {
   var d = appDetails[appId];
   if (!d) return;
+
+  // 记录当前打开的申请 ID（AI 分析按钮需要用到）
+  currentAppId = appId;
+
+  // 重置 AI 面板为初始状态
+  document.getElementById('ai-result-panel').style.display = 'none';
+  document.getElementById('ai-loading').style.display      = 'none';
+  var btn = document.getElementById('ai-analyze-btn');
+  if (btn) { btn.disabled = false; btn.textContent = '🤖 Get AI Analysis Report'; }
+
   document.getElementById('modal-name').textContent  = d.name  || '(No name)';
   document.getElementById('modal-email').textContent = d.email || 'N/A';
   document.getElementById('modal-phone').textContent = d.phone || 'N/A';
@@ -393,6 +452,74 @@ function toggleJobDetails() {
     text.textContent = 'Expand';
   }
 }
+
+// ─── AI 匹配分析交互逻辑 ─────────────────────────────────────────────────
+(function () {
+  // 等 DOM 就绪后挂载事件（modal 是静态 HTML，按钮始终存在）
+  document.addEventListener('DOMContentLoaded', function () {
+    var btn = document.getElementById('ai-analyze-btn');
+    if (!btn) return; // 非 owner 页面不渲染此按钮
+
+    btn.addEventListener('click', function () {
+      if (!currentAppId) return;
+
+      // 1. 禁用按钮 + 显示 Loading
+      btn.disabled = true;
+      btn.textContent = '⏳ Analyzing...';
+      document.getElementById('ai-loading').style.display      = 'block';
+      document.getElementById('ai-result-panel').style.display = 'none';
+
+      // 2. 构造 POST body（application/x-www-form-urlencoded）
+      var body = 'applicationId=' + encodeURIComponent(currentAppId);
+
+      // 3. 发送 AJAX 请求
+      fetch(ctxPath + '/mo/analyze-application', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body:    body
+      })
+      .then(function (response) {
+        if (!response.ok) {
+          return response.text().then(function (text) {
+            var msg;
+            try { msg = JSON.parse(text).error; } catch (e) { msg = null; }
+            throw new Error(msg || 'Server error: ' + response.status);
+          });
+        }
+        return response.json();
+      })
+      .then(function (data) {
+        // 4. 渲染结果到面板
+        var scoreEl   = document.getElementById('ai-score');
+        var matchedEl = document.getElementById('ai-matched');
+        var missingEl = document.getElementById('ai-missing');
+        var reasonEl  = document.getElementById('ai-reasoning');
+
+        scoreEl.textContent   = data.aiMatchScore;
+        matchedEl.textContent = data.aiMatchedSkills || '(none)';
+        missingEl.textContent = data.aiMissingSkills || 'None';
+        reasonEl.textContent  = data.aiReasoning     || '';
+
+        // 根据分数动态着色
+        var score = parseInt(data.aiMatchScore, 10);
+        scoreEl.style.color = score >= 70 ? '#16a34a' : score >= 50 ? '#d97706' : '#dc2626';
+
+        // 5. 隐藏 Loading，显示结果
+        document.getElementById('ai-loading').style.display      = 'none';
+        document.getElementById('ai-result-panel').style.display = 'block';
+        btn.textContent = '🔄 Re-analyse';
+        btn.disabled    = false;
+      })
+      .catch(function (err) {
+        // 6. 错误处理：恢复按钮，隐藏 loading，提示用户
+        document.getElementById('ai-loading').style.display = 'none';
+        btn.disabled    = false;
+        btn.textContent = '🤖 Get AI Analysis Report';
+        alert('AI analysis failed: ' + err.message + '\nPlease check your API key and network.');
+      });
+    });
+  });
+})();
 </script>
 </body>
 </html>

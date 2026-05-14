@@ -1,11 +1,15 @@
 package com.ta.recruitment.servlet;
 
 import com.ta.recruitment.model.*;
+import com.ta.recruitment.service.GeminiService;
+import org.apache.poi.xwpf.usermodel.XWPFDocument;
+import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.*;
-import java.io.IOException;
+import java.io.*;
+import java.nio.file.Files;
 import java.util.*;
 
 @WebServlet("/mo/*")
@@ -165,8 +169,146 @@ public class MOServlet extends BaseServlet {
         } else if (path.equals("/profile") || path.equals("/profile/")) {
             handleProfilePost(req, resp, ds, userId, "/WEB-INF/jsp/mo/profile.jsp");
 
+        } else if (path.equals("/analyze-application") || path.equals("/analyze-application/")) {
+            // ── AI 匹配分析接口（AJAX POST，返回纯 JSON）──────────────────────
+            resp.setContentType("application/json");
+            resp.setCharacterEncoding("UTF-8");
+            PrintWriter out = resp.getWriter();
+
+            String appId = req.getParameter("applicationId");
+            if (appId == null || appId.trim().isEmpty()) {
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                out.write("{\"error\":\"Missing applicationId\"}");
+                return;
+            }
+
+            // 1. 查出申请、岗位、申请人
+            Application app = ds.findApplicationById(appId);
+            if (app == null) {
+                resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                out.write("{\"error\":\"Application not found\"}");
+                return;
+            }
+            Job job = ds.findJobByJobId(app.getJobId());
+            if (job == null) {
+                resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                out.write("{\"error\":\"Job not found\"}");
+                return;
+            }
+            // 只有岗位所有者才能触发分析
+            if (!userId.equals(job.getPostedBy())) {
+                resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                out.write("{\"error\":\"Permission denied\"}");
+                return;
+            }
+            User ta = ds.findUserById(app.getTaId());
+
+            // 2. 组装 CV 文本（name/dept/cover letter 作为补充上下文）
+            StringBuilder cvBuilder = new StringBuilder();
+            if (ta != null) {
+                cvBuilder.append("Name: ").append(ta.getName()).append("\n");
+                if (ta.getDepartment() != null && !ta.getDepartment().isEmpty())
+                    cvBuilder.append("Department: ").append(ta.getDepartment()).append("\n");
+                if (ta.getPhone() != null && !ta.getPhone().isEmpty())
+                    cvBuilder.append("Phone: ").append(ta.getPhone()).append("\n");
+            }
+            String cover = app.getCoverLetter();
+            if (cover != null && !cover.trim().isEmpty()) {
+                cvBuilder.append("Cover Letter:\n").append(cover.trim()).append("\n");
+            }
+
+            // 3. 读取 CV 文件（优先用申请附件，其次用 TA 账户简历）
+            byte[] cvPdfBytes = null;
+            String cvFileName = app.getCvFileName();
+            if (cvFileName == null || cvFileName.isEmpty()) {
+                cvFileName = ta != null ? ta.getCvFileName() : null;
+            }
+            if (cvFileName != null && !cvFileName.isEmpty()) {
+                String uploadsDir = req.getServletContext().getRealPath("/WEB-INF/uploads/cv/");
+                File cvFile = new File(uploadsDir, cvFileName);
+                if (cvFile.exists() && cvFile.length() > 0) {
+                    String lowerName = cvFileName.toLowerCase();
+                    if (lowerName.endsWith(".pdf")) {
+                        try {
+                            byte[] bytes = Files.readAllBytes(cvFile.toPath());
+                            // 验证 PDF magic bytes
+                            if (bytes.length > 4
+                                    && bytes[0] == '%' && bytes[1] == 'P'
+                                    && bytes[2] == 'D' && bytes[3] == 'F') {
+                                cvPdfBytes = bytes;
+                            }
+                        } catch (IOException ignored) {}
+                    } else if (lowerName.endsWith(".docx")) {
+                        // 从 Word 文档提取文本，追加到 CV 上下文
+                        try (XWPFDocument doc = new XWPFDocument(new FileInputStream(cvFile))) {
+                            StringBuilder wordText = new StringBuilder();
+                            for (XWPFParagraph para : doc.getParagraphs()) {
+                                String text = para.getText().trim();
+                                if (!text.isEmpty()) wordText.append(text).append("\n");
+                            }
+                            if (wordText.length() > 0) {
+                                cvBuilder.append("\nCV Content (from Word document):\n")
+                                         .append(wordText);
+                            }
+                        } catch (Exception ignored) {}
+                    }
+                }
+            }
+
+            // 岗位要求：description + requirements 列表
+            StringBuilder reqBuilder = new StringBuilder();
+            reqBuilder.append("Job Title: ").append(job.getTitle()).append("\n");
+            reqBuilder.append("Course: ").append(job.getCourseName()).append(" (").append(job.getCourseCode()).append(")\n");
+            reqBuilder.append("Position Type: ").append(job.getPositionType()).append("\n");
+            if (job.getDescription() != null && !job.getDescription().isEmpty()) {
+                reqBuilder.append("Description: ").append(job.getDescription()).append("\n");
+            }
+            if (job.getRequirements() != null && !job.getRequirements().isEmpty()) {
+                reqBuilder.append("Requirements:\n");
+                for (String r : job.getRequirements()) {
+                    reqBuilder.append("- ").append(r).append("\n");
+                }
+            }
+
+            // 4. 调用 Gemini（传入 PDF bytes，无简历时降级为纯文本分析）
+            GeminiService gemini = new GeminiService();
+            try {
+                Application aiResult = gemini.analyzeMatch(cvBuilder.toString(), reqBuilder.toString(), cvPdfBytes);
+
+                // 5. 持久化 AI 结果
+                ds.updateApplicationAiResult(
+                    appId,
+                    aiResult.getAiMatchScore()     != null ? aiResult.getAiMatchScore() : 0,
+                    aiResult.getAiMatchedSkills()  != null ? aiResult.getAiMatchedSkills()  : "",
+                    aiResult.getAiMissingSkills()  != null ? aiResult.getAiMissingSkills()  : "",
+                    aiResult.getAiReasoning()      != null ? aiResult.getAiReasoning()      : ""
+                );
+
+                // 6. 将结果以 JSON 返回前端
+                String score   = String.valueOf(aiResult.getAiMatchScore() != null ? aiResult.getAiMatchScore() : 0);
+                String matched = jsonEsc(aiResult.getAiMatchedSkills());
+                String missing = jsonEsc(aiResult.getAiMissingSkills());
+                String reason  = jsonEsc(aiResult.getAiReasoning());
+                out.write("{\"aiMatchScore\":" + score
+                    + ",\"aiMatchedSkills\":\"" + matched + "\""
+                    + ",\"aiMissingSkills\":\"" + missing + "\""
+                    + ",\"aiReasoning\":\"" + reason + "\"}");
+            } catch (Exception e) {
+                resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                out.write("{\"error\":\"" + jsonEsc(e.getMessage()) + "\"}");
+            }
+
         } else {
             resp.sendRedirect(req.getContextPath() + "/mo/applicants");
         }
+    }
+
+    /** JSON 字符串值转义，与 DataStore.esc() 保持一致 */
+    private String jsonEsc(String s) {
+        if (s == null) return "";
+        return s.replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\n", "\\n")
+                .replace("\r", "");
     }
 }
