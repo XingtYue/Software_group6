@@ -104,20 +104,38 @@
                       placeholder="Strong programming skills&#10;Previous TA experience preferred&#10;Available 10 hours per week"></textarea>
           </div>
 
-          <div class="form-grid-2">
-            <div class="form-group">
-              <label class="form-label" for="hours">Hours per Week <span style="color:#b91c1c;">*</span></label>
-              <input class="form-input" id="hours" name="hours" type="text"
-                     placeholder="e.g. 10" required>
+          <div style="display:flex;gap:16px;align-items:flex-start;">
+            <div class="form-group" style="width:140px;flex-shrink:0;">
+              <label class="form-label" for="hours">Hrs/Week <span style="color:#b91c1c;">*</span></label>
+              <input class="form-input" id="hours" name="hours" type="number" min="1" max="40"
+                     placeholder="e.g. 10" required style="text-align:center;">
             </div>
-            <div class="form-group">
-              <label class="form-label" for="duration">Duration</label>
-              <select class="form-select" id="duration" name="duration">
-                <option value="Full Academic Year">Full Academic Year</option>
-                <option value="Semester 1">Semester 1</option>
-                <option value="Semester 2">Semester 2</option>
-                <option value="Exam Period">Exam Period</option>
-              </select>
+            <div class="form-group" style="flex:1;">
+              <label class="form-label">Duration <span style="color:#b91c1c;">*</span></label>
+              <input type="hidden" id="duration" name="duration">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div id="wkCount" style="font-size:13px;color:#374151;flex:1;">No weeks selected</div>
+                <button type="button" class="btn btn-outline btn-sm" onclick="toggleWeekPicker()" id="wkToggleBtn">
+                  ▾ Select Weeks
+                </button>
+              </div>
+              <div id="weekPicker" style="display:none;margin-top:8px;padding:12px;border:1px solid #e5e7eb;border-radius:8px;background:#f9fafb;">
+                <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+                  <button type="button" class="btn btn-outline btn-sm" onclick="selectWeeks(1,9)">Sem 1 (Wk 1–9)</button>
+                  <button type="button" class="btn btn-outline btn-sm" onclick="selectWeeks(10,18)">Sem 2 (Wk 10–18)</button>
+                  <button type="button" class="btn btn-outline btn-sm" onclick="selectAllWeeks()">All</button>
+                  <button type="button" class="btn btn-outline btn-sm" onclick="clearAllWeeks()">Clear</button>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:4px;">
+                  <% for (int w = 1; w <= 18; w++) { %>
+                  <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer;
+                                padding:4px 6px;border:1px solid #e5e7eb;border-radius:5px;background:#fff;user-select:none;">
+                    <input type="checkbox" class="wk-cb" value="<%= w %>" onchange="syncDuration()">
+                    <span>Wk <%= w %></span>
+                  </label>
+                  <% } %>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -142,8 +160,6 @@
     var parts = val.split('|');
     document.getElementById('courseCode').value = parts[0] || '';
     document.getElementById('courseName').value = parts[1] || parts[0] || '';
-
-    // Auto-suggest title if positionType is already selected
     autoTitle();
   }
 
@@ -152,10 +168,49 @@
     var posEl = document.getElementById('positionType');
     var titleEl = document.getElementById('title');
     if (!courseNameEl.value || !posEl.value) return;
-    // Only auto-fill if title is still empty
     if (!titleEl.value) {
       titleEl.value = courseNameEl.value + ' - ' + posEl.value + ' TA';
     }
+  }
+
+  function toggleWeekPicker() {
+    var picker = document.getElementById('weekPicker');
+    var btn = document.getElementById('wkToggleBtn');
+    if (picker.style.display === 'none') {
+      picker.style.display = 'block';
+      btn.textContent = '▴ Close';
+    } else {
+      picker.style.display = 'none';
+      btn.textContent = '▾ Select Weeks';
+    }
+  }
+
+  function syncDuration() {
+    var checked = Array.from(document.querySelectorAll('.wk-cb:checked'))
+                       .map(function(cb) { return parseInt(cb.value); });
+    checked.sort(function(a, b) { return a - b; });
+    document.getElementById('duration').value = checked.join(',');
+    document.getElementById('wkCount').textContent = checked.length > 0
+      ? checked.length + ' week(s) selected (Wk ' + checked[0] + ' – Wk ' + checked[checked.length-1] + ')'
+      : 'No weeks selected';
+  }
+
+  function selectAllWeeks() {
+    document.querySelectorAll('.wk-cb').forEach(function(cb) { cb.checked = true; });
+    syncDuration();
+  }
+
+  function clearAllWeeks() {
+    document.querySelectorAll('.wk-cb').forEach(function(cb) { cb.checked = false; });
+    syncDuration();
+  }
+
+  function selectWeeks(from, to) {
+    document.querySelectorAll('.wk-cb').forEach(function(cb) {
+      var v = parseInt(cb.value);
+      cb.checked = (v >= from && v <= to);
+    });
+    syncDuration();
   }
 
   document.getElementById('positionType').addEventListener('change', autoTitle);

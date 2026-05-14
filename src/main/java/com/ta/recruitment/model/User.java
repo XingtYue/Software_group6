@@ -13,7 +13,8 @@ public class User implements Serializable {
     private String status; // "active", "inactive"
     private String cvFileName;
     private int workload = 0;
-    private String modules = ""; // semicolon-separated "courseCode|courseName" pairs, MO only
+    private String modules = ""; // semicolon-separated "courseCode|courseName" pairs, MO only (approved)
+    private String pendingModules = ""; // same format, awaiting admin approval
 
     public User() {}
 
@@ -60,11 +61,22 @@ public class User implements Serializable {
     public String getModules() { return modules != null ? modules : ""; }
     public void setModules(String modules) { this.modules = modules != null ? modules : ""; }
 
+    public String getPendingModules() { return pendingModules != null ? pendingModules : ""; }
+    public void setPendingModules(String pendingModules) { this.pendingModules = pendingModules != null ? pendingModules : ""; }
+
+    public java.util.List<java.util.Map<String,String>> getPendingModuleList() {
+        return parseModuleString(pendingModules);
+    }
+
     /** Returns list of maps with "code" and "name" keys, parsed from the modules string. */
     public java.util.List<java.util.Map<String,String>> getModuleList() {
+        return parseModuleString(modules);
+    }
+
+    private java.util.List<java.util.Map<String,String>> parseModuleString(String raw) {
         java.util.List<java.util.Map<String,String>> list = new java.util.ArrayList<>();
-        if (modules == null || modules.trim().isEmpty()) return list;
-        for (String entry : modules.split(";")) {
+        if (raw == null || raw.trim().isEmpty()) return list;
+        for (String entry : raw.split(";")) {
             entry = entry.trim();
             if (entry.isEmpty()) continue;
             int sep = entry.indexOf('|');
@@ -92,6 +104,7 @@ public class User implements Serializable {
         m.put("phone", phone != null ? phone : "");
         m.put("cvFileName", cvFileName != null ? cvFileName : "");
         m.put("modules", modules != null ? modules : "");
+        m.put("pendingModules", pendingModules != null ? pendingModules : "");
         return m;
     }
 }

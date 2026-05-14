@@ -11,9 +11,15 @@ public class Application {
     private String appliedDate;
     private String coverLetter;
     private String cvFileName;
-    private String courseCode;    // 课程编号（和Job的courseCode对应，用于统计）
-    private String courseName;    // 课程名称（前端展示用）
-    private String positionType;  // 申请的岗位类型（前端展示用）
+    private String courseCode;
+    private String courseName;
+    private String positionType;
+
+    // AI match analysis fields (populated by GeminiService)
+    private Integer aiMatchScore;      // 0-100
+    private String aiMatchedSkills;    // e.g. "Java, Agile"
+    private String aiMissingSkills;    // e.g. "Python"
+    private String aiReasoning;        // analysis summary
 
     public Application() {
         this.status = "pending";
@@ -73,6 +79,18 @@ public class Application {
         this.positionType = positionType;
     }
 
+    public Integer getAiMatchScore() { return aiMatchScore; }
+    public void setAiMatchScore(Integer aiMatchScore) { this.aiMatchScore = aiMatchScore; }
+
+    public String getAiMatchedSkills() { return aiMatchedSkills; }
+    public void setAiMatchedSkills(String aiMatchedSkills) { this.aiMatchedSkills = aiMatchedSkills; }
+
+    public String getAiMissingSkills() { return aiMissingSkills; }
+    public void setAiMissingSkills(String aiMissingSkills) { this.aiMissingSkills = aiMissingSkills; }
+
+    public String getAiReasoning() { return aiReasoning; }
+    public void setAiReasoning(String aiReasoning) { this.aiReasoning = aiReasoning; }
+
     public java.util.Map<String,String> toMap() {
         java.util.Map<String,String> m = new java.util.LinkedHashMap<>();
         m.put("id", id);
@@ -91,6 +109,10 @@ public class Application {
         m.put("positionType", positionType != null ? positionType : "");
         m.put("coverLetter", coverLetter != null ? coverLetter : "");
         m.put("cvFileName", cvFileName != null ? cvFileName : "");
+        m.put("aiMatchScore", aiMatchScore != null ? String.valueOf(aiMatchScore) : "");
+        m.put("aiMatchedSkills", aiMatchedSkills != null ? aiMatchedSkills : "");
+        m.put("aiMissingSkills", aiMissingSkills != null ? aiMissingSkills : "");
+        m.put("aiReasoning", aiReasoning != null ? aiReasoning : "");
         return m;
     }
 }

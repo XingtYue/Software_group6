@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(powershell *)",
-      "Bash(n\\\\\"\")"
+      "Bash(n\\\\\"\")",
+      "mcp__ide__getDiagnostics"
     ]
   }
 }
