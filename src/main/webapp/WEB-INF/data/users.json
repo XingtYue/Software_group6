@@ -11,5 +11,7 @@
   {"id":"u070857977","name":"QAQ","email":"mo3@bupt.edu.cn","password":"mo1234","role":"mo","status":"active","department":"FOR TEST","phone":"133133133","cvFileName":"","workload":"0","modules":"EBU6363|Personal Development Plan","pendingModules":""},
   {"id":"u423881266","name":"0424","email":"mo4@bupt.edu.cn","password":"MO1234","role":"mo","status":"active","department":"FOR TEST","phone":"11111111","cvFileName":"","workload":"0","modules":"BBU0000|TEST","pendingModules":""},
   {"id":"u777442175","name":"testai","email":"testai@bupt.edu.cn","password":"mo1234","role":"mo","status":"active","department":"FOR TEST","phone":"11111111","cvFileName":"","workload":"0","modules":"","pendingModules":""},
-  {"id":"u397935393","name":"regitstedMO","email":"registedMO@bupt.edu.cn","password":"mo1234","role":"mo","status":"active","department":"FOR TEST","phone":"11111111","cvFileName":"","workload":"0","modules":"BBU1126|TESTMO","pendingModules":""}
+  {"id":"u397935393","name":"regitstedMO","email":"registedMO@bupt.edu.cn","password":"mo1234","role":"mo","status":"active","department":"FOR TEST","phone":"11111111","cvFileName":"","workload":"0","modules":"BBU1126|TESTMO","pendingModules":""},
+  {"id":"u294779608","name":"try","email":"try@bupt.edu.cn","password":"mo1234","role":"mo","status":"active","department":"FOR TEST","phone":"11111111","cvFileName":"","workload":"0","modules":"BBU0516|0516test","pendingModules":""},
+  {"id":"u446108113","name":"123","email":"123@bupt.edu.cn","password":"11111111","role":"mo","status":"active","department":"FOR TEST","phone":"11111111","cvFileName":"","workload":"0","modules":"BBU0516|0516","pendingModules":""}
 ]
