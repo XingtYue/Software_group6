@@ -69,7 +69,41 @@ public class TAServlet extends BaseServlet {
             List<Map<String,String>> appMaps = new ArrayList<>();
             int pending = 0, accepted = 0, rejected = 0;
             for (Application a : apps) {
-                appMaps.add(a.toMap());
+                {// 找到这个申请对应的 Job
+                    Job job = ds.findJobByJobId(a.getJobId());
+
+                    // 构建包含 Job 信息的 Map
+                    Map<String,String> app = new HashMap<>();
+                    app.put("id", a.getId());
+                    app.put("jobId", a.getJobId());
+                    app.put("jobTitle", a.getJobTitle()); // 或者 job.getTitle()
+                    app.put("appliedDate", a.getAppliedDate());
+                    app.put("status", a.getStatus());
+                    app.put("coverLetter", a.getCoverLetter());
+
+                    // 补充 Job 相关字段（关键！）
+                    if (job != null) {
+                        app.put("jobDepartment", job.getDepartment());
+                        app.put("jobHours", job.getHours());
+                        app.put("jobDuration", job.getDuration());
+                        app.put("jobStatus", job.getStatus());
+                        app.put("jobDescription", job.getDescription());
+                    } else {
+                        // 找不到 Job 时给默认值，防止前端报错
+                        app.put("jobDepartment", "N/A");
+                        app.put("jobHours", "N/A");
+                        app.put("jobDuration", "N/A");
+                        app.put("jobStatus", "N/A");
+                        app.put("jobDescription", "N/A");
+                    }
+
+                    appMaps.add(app); // 把构建好的 Map 加进去
+
+                    // 原来的状态统计代码不动
+                    if ("accepted".equals(a.getStatus()))      accepted++;
+                    else if ("rejected".equals(a.getStatus())) rejected++;
+                    else                                       pending++;
+                }
                 if ("accepted".equals(a.getStatus()))      accepted++;
                 else if ("rejected".equals(a.getStatus())) rejected++;
                 else                                       pending++;
