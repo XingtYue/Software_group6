@@ -324,9 +324,9 @@
       <!-- Sidebar -->
       <div class="sidebar">
         <p class="sidebar-title">OVERVIEW</p>
-        <div class="stat-card">
+        <div class="stat-card blue">
           <p class="stat-label">Active Positions</p>
-          <p class="stat-value">${activeCourses != null ? activeCourses : 0}</p>
+          <p class="stat-value blue">${activeCourses != null ? activeCourses : 0}</p>
         </div>
         <div class="stat-card yellow">
           <p class="stat-label">Pending Reviews</p>
