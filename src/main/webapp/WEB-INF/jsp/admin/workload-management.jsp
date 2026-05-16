@@ -103,9 +103,9 @@
           <p class="stat-label">Overloaded</p>
           <p class="stat-value red">${overloadedCount}</p>
         </div>
-        <div class="stat-card">
+        <div class="stat-card blue">
           <p class="stat-label">Light Workload</p>
-          <p class="stat-value">${lightCount}</p>
+          <p class="stat-value blue">${lightCount}</p>
         </div>
       </div>
     </div>
