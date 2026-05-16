@@ -67,36 +67,36 @@
         </div>
       </div>
 
-      <!-- Sidebar -->
-      <div class="sidebar">
-        <p class="sidebar-title">APPLICATION SUMMARY</p>
-        <div class="stat-card">
-          <p class="stat-label">Pending</p>
-          <p class="stat-value">${pendingCount}</p>
-        </div>
-        <div class="stat-card green">
-          <p class="stat-label">Accepted</p>
-          <p class="stat-value green">${acceptedCount}</p>
-        </div>
-        <div class="stat-card">
-          <p class="stat-label">Rejected</p>
-          <p class="stat-value">${rejectedCount}</p>
-        </div>
-        <div class="stat-card">
-          <p class="stat-label">Total Applications</p>
-          <p class="stat-value">${totalCount}</p>
-        </div>
+     <!-- Sidebar -->
+     <div class="sidebar">
+       <p class="sidebar-title">APPLICATION SUMMARY</p>
+       <div class="stat-card yellow">
+         <p class="stat-label">Pending</p>
+         <p class="stat-value yellow">${pendingCount}</p>
+       </div>
+       <div class="stat-card green">
+         <p class="stat-label">Accepted</p>
+         <p class="stat-value green">${acceptedCount}</p>
+       </div>
+       <div class="stat-card red">
+         <p class="stat-label">Rejected</p>
+         <p class="stat-value red">${rejectedCount}</p>
+       </div>
+       <div class="stat-card">
+         <p class="stat-label">Total Applications</p>
+         <p class="stat-value">${totalCount}</p>
+       </div>
 
-        <div class="sidebar-section">
-          <p class="sidebar-section-title">QUICK ACTIONS</p>
-          <div style="display:flex;flex-direction:column;gap:8px;">
-            <a href="${pageContext.request.contextPath}/ta/jobs"
-               class="btn btn-outline btn-full" style="justify-content:flex-start;">Browse More Jobs</a>
-            <a href="${pageContext.request.contextPath}/ta/profile"
-               class="btn btn-outline btn-full" style="justify-content:flex-start;">Update CV</a>
-          </div>
-        </div>
-      </div>
+       <div class="sidebar-section">
+         <p class="sidebar-section-title">QUICK ACTIONS</p>
+         <div style="display:flex;flex-direction:column;gap:8px;">
+           <a href="${pageContext.request.contextPath}/ta/jobs"
+              class="btn btn-outline btn-full" style="justify-content:flex-start;">Browse More Jobs</a>
+           <a href="${pageContext.request.contextPath}/ta/profile"
+              class="btn btn-outline btn-full" style="justify-content:flex-start;">Update CV</a>
+         </div>
+       </div>
+     </div>
     </div>
   </main>
 </div>

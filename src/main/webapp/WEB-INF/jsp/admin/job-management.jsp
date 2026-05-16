@@ -97,17 +97,17 @@
       <!-- Sidebar -->
       <div class="sidebar">
         <p class="sidebar-title">OVERVIEW</p>
-        <div class="stat-card">
+        <div class="stat-card blue">
           <p class="stat-label">Total Jobs</p>
-          <p class="stat-value">${totalJobs != null ? totalJobs : 7}</p>
+          <p class="stat-value blue">${totalJobs != null ? totalJobs : 7}</p>
         </div>
         <div class="stat-card green">
           <p class="stat-label">Active Jobs</p>
           <p class="stat-value green">${activeJobs != null ? activeJobs : 5}</p>
         </div>
-        <div class="stat-card">
+        <div class="stat-card red">
           <p class="stat-label">Closed Jobs</p>
-          <p class="stat-value">${closedJobs != null ? closedJobs : 2}</p>
+          <p class="stat-value red">${closedJobs != null ? closedJobs : 2}</p>
         </div>
         <div class="stat-card">
           <p class="stat-label">Total Applicants</p>
