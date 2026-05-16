@@ -96,9 +96,9 @@
                     <p class="stat-label">Active Applications</p>
                     <p class="stat-value blue">${activeApplications}</p>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card green">
                     <p class="stat-label">Available Jobs</p>
-                    <p class="stat-value">${totalJobs}</p>
+                    <p class="stat-value green">${totalJobs}</p>
                 </div>
                 <div class="stat-card green">
                     <p class="stat-label">Accepted Positions</p>
