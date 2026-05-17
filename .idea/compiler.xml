@@ -8,5 +8,8 @@
         <outputRelativeToContentRoot value="true" />
       </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="ta-recruitment" target="1.8" />
+    </bytecodeTargetLevel>
   </component>
 </project>

@@ -410,18 +410,21 @@
           <span style="font-size:14px; color:#475569;">/100</span>
         </div>
 
+        <!-- 匹配技能 -->
         <div style="margin-bottom:10px;">
-          <p style="font-size:13px; font-weight:600; color:#0c4a6e; margin:0 0 4px 0;">✅ MATCHED SKILLS:</p>
+          <p style="font-size:13px; font-weight:600; color:#0c4a6e; margin:0 0 4px 0;">✅ Matched Skills:</p>
           <p id="ai-matched" style="margin:0; font-size:13px; color:#334155; line-height:1.6;"></p>
         </div>
 
+        <!-- 缺失技能 -->
         <div style="margin-bottom:10px;">
-          <p style="font-size:13px; font-weight:600; color:#0c4a6e; margin:0 0 4px 0;">⚠️ MISSING SKILLS:</p>
+          <p style="font-size:13px; font-weight:600; color:#0c4a6e; margin:0 0 4px 0;">⚠️ Missing Skills:</p>
           <p id="ai-missing" style="margin:0; font-size:13px; color:#334155; line-height:1.6;"></p>
         </div>
 
+        <!-- 理由 -->
         <div>
-          <p style="font-size:13px; font-weight:600; color:#0c4a6e; margin:0 0 4px 0;">💡 REASONING:</p>
+          <p style="font-size:13px; font-weight:600; color:#0c4a6e; margin:0 0 4px 0;">💡 Reasoning:</p>
           <p id="ai-reasoning" style="margin:0; font-size:13px; color:#334155; line-height:1.6; white-space:pre-wrap;"></p>
         </div>
       </div>
