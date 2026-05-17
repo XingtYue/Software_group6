@@ -186,20 +186,46 @@ public class TAServlet extends BaseServlet {
             app.setTaEmail(ta != null ? ta.getEmail() : "");
             app.setCoverLetter(req.getParameter("coverLetter"));
 
-            // 保存CV的原有逻辑
+            // 保存CV：优先使用本次上传的CV；如果没上传，则使用profile中已有的CV
             String savedCv = saveCvPart(req.getPart("cv"), userId,
                     getServletContext().getRealPath("/WEB-INF/uploads/cv/"));
+
+            String finalCvFileName = null;
+
             if (savedCv != null) {
-                if (ta != null) { ta.setCvFileName(savedCv); ds.updateUser(ta); }
-                app.setCvFileName(savedCv);
+                finalCvFileName = savedCv;
+
+                // 如果本次上传了新CV，同时更新用户profile中的CV
+                if (ta != null) {
+                    ta.setCvFileName(savedCv);
+                    ds.updateUser(ta);
+                }
+
             } else if (ta != null && ta.getCvFileName() != null && !ta.getCvFileName().isEmpty()) {
-                app.setCvFileName(ta.getCvFileName());
+                // 如果本次没上传，但profile里已有CV，则使用已有CV
+                finalCvFileName = ta.getCvFileName();
             }
 
-            // 保存申请
+// ========== 校验4：申请岗位时必须附带CV ==========
+            if (finalCvFileName == null || finalCvFileName.trim().isEmpty()) {
+                req.setAttribute("errorMsg", "Please attach a CV before submitting your application.");
+                req.setAttribute("job", job.toMap());
+                req.setAttribute("jobId", jobId);
+                req.setAttribute("requirements", job.getRequirements());
+                req.setAttribute("userCvFileName", "");
+                req.getRequestDispatcher("/WEB-INF/jsp/ta/apply-job.jsp").forward(req, resp);
+                return;
+            }
+
+// 设置申请使用的CV
+            app.setCvFileName(finalCvFileName);
+
+// 建议顺手设置默认申请状态
+            app.setStatus("pending");
+
+// 保存申请
             ds.addApplication(app);
             resp.sendRedirect(req.getContextPath() + "/ta/applications");
-
         } else if (path.equals("/profile") || path.equals("/profile/")) {
             String action = req.getParameter("action");
             if ("uploadCV".equals(action)) {
