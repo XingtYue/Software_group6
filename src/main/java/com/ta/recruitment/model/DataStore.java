@@ -281,6 +281,17 @@ public class DataStore {
         return result;
     }
 
+    // ========== 新增：获取TA所有已接受的申请 ==========
+    public List<Application> getAcceptedApplicationsByTA(String taId) {
+        List<Application> result = new ArrayList<>();
+        for (Application a : applications) {
+            if (taId.equals(a.getTaId()) && "accepted".equals(a.getStatus())) {
+                result.add(a);
+            }
+        }
+        return result;
+    }
+
     public List<Application> getApplicationsByJob(String jobId) {
         List<Application> result = new ArrayList<>();
         for (Application a : applications) {
@@ -321,19 +332,19 @@ public class DataStore {
     // ==================== WORKLOAD ====================
     public List<Map<String,String>> getWorkloadData() {
         List<Map<String,String>> result = new ArrayList<>();
-        List<User> tas = getUsersByRole("ta");
+        List<User> allTAs = getUsersByRole("ta");
 
-        for (User ta : tas) {
-            int totalHours = 0;
-            List<Application> accepted = new ArrayList<>();
+        for (User ta : allTAs) {
+            Map<String,String> wl = new HashMap<>();
+            wl.put("id", ta.getId());
+            wl.put("name", ta.getName());
+            wl.put("status", ta.getStatus());
 
-            // 找出已录取的申请
-            for (Application a : applications) {
-                if (ta.getId().equals(a.getTaId()) && "accepted".equals(a.getStatus())) {
-                    accepted.add(a);
-                }
-            }
+            // ========== 修正：计算总工时（每周工时 × 岗位持续周数） ==========
+            int autoCalculatedTotalHours = 0;
+            List<Application> acceptedApps = getAcceptedApplicationsByTA(ta.getId());
 
+<<<<<<< Updated upstream
             // 计算工时
             for (Application a : accepted) {
                 Job j = findJobByJobId(a.getJobId());
@@ -344,35 +355,30 @@ public class DataStore {
                             totalHours += Integer.parseInt(h);
                         }
                     } catch (Exception ignored) {}
+=======
+            for (Application app : acceptedApps) {
+                Job job = findJobByJobId(app.getJobId());
+                if (job != null && job.getHours() != null && !job.getHours().trim().isEmpty()) {
+                    try {
+                        int weeklyHours = Integer.parseInt(job.getHours().trim());
+                        int weekCount = parseDurationWeekCount(job.getDuration());
+                        autoCalculatedTotalHours += weeklyHours * weekCount;
+                    } catch (NumberFormatException e) {
+                        // 忽略格式错误的工时
+                    }
+>>>>>>> Stashed changes
                 }
             }
 
-            // 保存工时
-            ta.setWorkload(totalHours);
+            // 优先级：如果Admin手动设置了工时，优先使用手动值；否则使用自动计算值
+            int finalHours = ta.getWorkload() > 0 ? ta.getWorkload() : autoCalculatedTotalHours;
 
-            // 把当前 TA 加入结果
-            Map<String, String> m = new LinkedHashMap<>();
-            m.put("id", ta.getId());
-            m.put("name", ta.getName());
-            m.put("positions", String.valueOf(countAcceptedPositions(ta.getId())));
-            m.put("totalHours", String.valueOf(totalHours));
-            m.put("status", ta.getStatus());
-            result.add(m);
+            wl.put("totalHours", String.valueOf(finalHours));
+            wl.put("positions", String.valueOf(acceptedApps.size()));
+            result.add(wl);
         }
 
-        // 排序
-        result.sort((A, B) -> {
-            boolean aActive = "active".equals(A.get("status"));
-            boolean bActive = "active".equals(B.get("status"));
-            if (aActive && !bActive) return -1;
-            if (!aActive && bActive) return 1;
-            int hA = Integer.parseInt(A.get("totalHours"));
-            int hB = Integer.parseInt(B.get("totalHours"));
-            return Integer.compare(hB, hA);
-        });
-
-        saveUsers();
-        return result; // ✅ 正确位置
+        return result;
     }
 
     private int countAcceptedPositions(String taId) {
@@ -756,7 +762,7 @@ public class DataStore {
 
     private String generateId() {
         return String.valueOf(System.currentTimeMillis()).substring(7) +
-               String.valueOf((int)(Math.random() * 1000));
+                String.valueOf((int)(Math.random() * 1000));
     }
 
     private String today() {
