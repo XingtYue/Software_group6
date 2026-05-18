@@ -9,17 +9,95 @@
   <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
   <style>
     /* All modal, lock-notice, section-header, filter-btn, decided-section classes are in style.css */
-    .decided-section { display: none; }
-    .decided-section.active { display: block; }
-    .no-applicants { color: #94a3b8; font-size: 14px; font-style: italic; padding: 8px 0; }
-    .filter-btn {
-      padding: 6px 18px; border-radius: 7px; border: 1px solid #cbd5e1;
-      background: #fff; cursor: pointer; font-size: 13px; color: #64748b;
-      font-weight: 500; transition: all 0.15s;
-    }
-    .filter-btn:hover { background: #f8fafc; border-color: #94a3b8; }
-    .filter-btn.active-green { background: linear-gradient(135deg,#15803d,#16a34a); color:#fff; border-color:#15803d; }
-    .filter-btn.active-red   { background: linear-gradient(135deg,#b91c1c,#dc2626); color:#fff; border-color:#b91c1c; }
+   .modal-overlay {
+     display: none;
+     position: fixed;
+     top: 0;
+     left: 0;
+     width: 100%;
+     height: 100%;
+     background: rgba(0,0,0,0.5);
+     z-index: 1000;
+     align-items: center;
+     justify-content: center;
+     padding: 10px;
+     box-sizing: border-box;
+   }
+   .modal-overlay.active { display: flex; }
+   .modal-box {
+     background: #fff;
+     border-radius: 6px;
+     padding: 16px;
+     max-width: 400px;
+     width: 100%;
+     position: relative;
+     max-height: 180;
+     overflow: visible;
+     box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+   }
+   .modal-close {
+     position: absolute;
+     top: 8px;
+     left: 10px;
+     font-size: 28px;
+     cursor: pointer;
+     color: #6b7280;
+     border: none;
+     background: none;
+     line-height: 1;
+   }
+   .modal-title {
+     font-size: 22px;
+     font-weight: 600;
+     margin: 10px 0 12px 0;
+     color: #111827;
+   }
+   .modal-section {
+     margin-top: 10px;
+     padding-top: 8px;
+     border-top: 1px solid #e5e7eb;
+   }
+   .modal-section-title {
+     font-size: 11px;
+     font-weight: 600;
+     color: #374151;
+     margin-bottom: 4px;
+     text-transform: uppercase;
+     letter-spacing: 0.03em;
+   }
+   .info-grid {
+     display: grid;
+     grid-template-columns: 80px 1fr;
+     gap: 6px 8px;
+   }
+   .info-label {
+     font-size: 12px;
+     color: #9ca3af;
+     font-weight: 500;
+     text-transform: uppercase;
+   }
+   .info-value {
+     font-size: 12px;
+     color: #111827;
+     word-break: break-word;
+   }
+   .cover-letter-box {
+     background: #f9fafb;
+     border: 1px solid #e5e7eb;
+     border-radius: 4px;
+     padding: 8px;
+     font-size: 11px;
+     color: #374151;
+     white-space: pre-wrap;
+     max-height: 100px;
+     line-height: 1.4;
+     overflow: hidden;
+   }
+   .cover-letter-empty {
+     font-size: 11px;
+     color: #9ca3af;
+     font-style: italic;
+   }
   </style>
 </head>
 <%!
@@ -274,40 +352,45 @@
 </div>
 
 <!-- ===== VIEW DETAILS MODAL ===== -->
+<!-- ===== VIEW DETAILS MODAL ===== -->
 <div id="modal-overlay" class="modal-overlay" onclick="if(event.target===this)closeModal()">
   <div class="modal-box">
     <button class="modal-close" onclick="closeModal()">&times;</button>
     <h3 class="modal-title" id="modal-name"></h3>
 
     <div class="info-grid">
-      <span class="info-label">Email</span>      <span class="info-value" id="modal-email"></span>
-      <span class="info-label">Phone</span>      <span class="info-value" id="modal-phone"></span>
-      <span class="info-label">Department</span> <span class="info-value" id="modal-dept"></span>
+      <span class="info-label">EMAIL</span>
+      <span class="info-value" id="modal-email"></span>
+
+      <span class="info-label">PHONE</span>
+      <span class="info-value" id="modal-phone"></span>
+
+      <span class="info-label">DEPARTMENT</span>
+      <span class="info-value" id="modal-dept"></span>
     </div>
 
     <div class="modal-section">
-      <p class="modal-section-title">Cover Letter</p>
+      <p class="modal-section-title">COVER LETTER</p>
       <div id="modal-cover-wrap">
         <div class="cover-letter-box" id="modal-cover"></div>
       </div>
     </div>
 
     <div class="modal-section" id="modal-cv-section">
-      <p class="modal-section-title">CV / Resume</p>
+      <p class="modal-section-title">CV / RESUME</p>
       <a id="modal-cv-link" href="#" target="_blank" class="btn btn-outline btn-sm">
         View / Download CV
       </a>
     </div>
     <div class="modal-section" id="modal-no-cv-section" style="display:none;">
-      <p class="modal-section-title">CV / Resume</p>
-      <p class="cover-letter-empty">No CV uploaded for this application.</p>
+      <p class="modal-section-title">CV / RESUME</p>
+      <p class="cover-letter-empty">No CV uploaded for this user.</p>
     </div>
 
     <!-- ===== AI 匹配分析 Section ===== -->
     <div class="modal-section" id="modal-ai-section">
-      <p class="modal-section-title">AI Matching Analysis</p>
+      <p class="modal-section-title">AI MATCHING ANALYSIS</p>
 
-      <!-- AI 分析按钮 -->
       <% if (isOwner) { %>
       <button id="ai-analyze-btn" type="button" class="btn btn-primary btn-sm" style="margin-bottom:12px;">
         🤖 Get AI Analysis Report
@@ -316,16 +399,13 @@
       <p class="cover-letter-empty">Only course owner can trigger AI analysis.</p>
       <% } %>
 
-      <!-- Loading 提示 -->
       <div id="ai-loading" style="display:none; padding:12px; background:#fef3c7; border:1px solid #fbbf24; border-radius:6px; color:#92400e; font-size:13px;">
         ⏳ Analyzing with Gemini AI... Please wait.
       </div>
 
-      <!-- AI 结果面板 -->
       <div id="ai-result-panel" style="display:none; padding:16px; background:#f0f9ff; border:1px solid #0ea5e9; border-radius:8px;">
-        <!-- 匹配分数 -->
         <div style="margin-bottom:12px;">
-          <span style="font-size:14px; font-weight:600; color:#0c4a6e;">Match Score:</span>
+          <span style="font-size:14px; font-weight:600; color:#0c4a6e;">MATCH SCORE:</span>
           <span id="ai-score" style="font-size:20px; font-weight:700; color:#0284c7; margin-left:8px;"></span>
           <span style="font-size:14px; color:#475569;">/100</span>
         </div>
