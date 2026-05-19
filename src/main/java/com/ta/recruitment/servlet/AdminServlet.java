@@ -113,31 +113,53 @@ public class AdminServlet extends BaseServlet {
         } else if (path.equals("/workload") || path.equals("/workload/")) {
             List<Map<String,String>> workloads = ds.getWorkloadData();
             int normal = 0, overloaded = 0, light = 0;
+
+            // ========== 已更新：统一全局阈值 ==========
+            // Light: < 80h | Normal: 80h - 150h | Overloaded: > 150h
             for (Map<String,String> w : workloads) {
                 int h = parseInt(w.getOrDefault("totalHours", "0"));
-                if (h > 15) overloaded++; else if (h > 8) normal++; else light++;
+                if (h > 150) overloaded++;
+                else if (h >= 80) normal++;
+                else light++;
             }
+
             req.setAttribute("workloads",       workloads);
             req.setAttribute("totalTAs",        workloads.size());
             req.setAttribute("normalCount",     normal);
             req.setAttribute("overloadedCount", overloaded);
             req.setAttribute("lightCount",      light);
             forward(req, resp, "/WEB-INF/jsp/admin/workload-management.jsp");
-
         } else if (path.startsWith("/workload/edit/")) {
             String taId = path.substring("/workload/edit/".length());
             User ta = ds.findUserById(taId);
             if (ta == null) { resp.sendRedirect(req.getContextPath() + "/admin/workload"); return; }
+
             List<Application> taApps = ds.getApplicationsByTA(taId);
             List<Map<String,String>> taApplications = new ArrayList<>();
+
+            // 计算总工时（每周）
+            int totalWeeklyHours = 0;
+
             for (Application app : taApps) {
                 Map<String,String> map = app.toMap();
                 Job job = ds.findJobByJobId(app.getJobId());
-                map.put("jobHours", job != null ? job.getHours() : "0");
+                String jobHours = job != null ? job.getHours() : "0";
+                map.put("jobHours", jobHours);
                 taApplications.add(map);
+
+                // 只累加已接受的岗位工时
+                if ("accepted".equals(app.getStatus())) {
+                    try {
+                        totalWeeklyHours += Integer.parseInt(jobHours.trim());
+                    } catch (NumberFormatException e) {
+                        // 忽略格式错误的工时
+                    }
+                }
             }
-            req.setAttribute("ta",             ta);
+
+            req.setAttribute("ta", ta);
             req.setAttribute("taApplications", taApplications);
+            req.setAttribute("totalWeeklyHours", totalWeeklyHours);
             forward(req, resp, "/WEB-INF/jsp/admin/edit-workload.jsp");
 
         } else if (path.equals("/profile") || path.equals("/profile/")) {
@@ -229,7 +251,9 @@ public class AdminServlet extends BaseServlet {
 
         } else if (path.equals("/profile") || path.equals("/profile/")) {
             String userId = (String) req.getSession().getAttribute("userId");
-            handleProfilePost(req, resp, ds, userId, "/WEB-INF/jsp/admin/profile.jsp");
+            User user = ds.findUserById(userId);
+            if (user != null) req.setAttribute("user", user.toMap());
+            forward(req, resp, "/WEB-INF/jsp/admin/profile.jsp");
 
         } else if (path.matches("/users/[^/]+/edit")) {
             String uid = path.substring("/users/".length(), path.lastIndexOf("/edit"));
@@ -408,7 +432,7 @@ public class AdminServlet extends BaseServlet {
                 if (existing != null && !existing.isEmpty()) {
                     StringBuilder sb = new StringBuilder();
                     for (String entry : existing.split(";")) {
-                        if (!entry.startsWith(code + "|") && !entry.equals(code)) {
+                        if (!entry.startsWith(code + "|") && !entry.equals(code.trim())) {
                             if (sb.length() > 0) sb.append(";");
                             sb.append(entry);
                         }
