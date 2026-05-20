@@ -336,6 +336,7 @@ public class DataStore {
         if (a != null) {
             a.setStatus(status);
             saveApplications();
+            recalcAndSaveWorkload(a.getTaId());
         }
     }
 
@@ -353,101 +354,47 @@ public class DataStore {
     }
 
     // ==================== WORKLOAD ====================
+
+    /** Recalculates workload for one TA and persists it to users.json. */
+    private void recalcAndSaveWorkload(String taId) {
+        User ta = findUserById(taId);
+        if (ta == null) return;
+        int total = 0;
+        for (Application a : applications) {
+            if (taId.equals(a.getTaId()) && "accepted".equals(a.getStatus())) {
+                Job j = findJobByJobId(a.getJobId());
+                if (j != null && j.getHours() != null) {
+                    try {
+                        String h = j.getHours().replaceAll("[^0-9]", "");
+                        if (!h.isEmpty())
+                            total += Integer.parseInt(h) * parseDurationWeekCount(j.getDuration());
+                    } catch (Exception ignored) {}
+                }
+            }
+        }
+        ta.setWorkload(total);
+        saveUsers();
+    }
+
     public List<Map<String,String>> getWorkloadData() {
         List<Map<String,String>> result = new ArrayList<>();
         List<User> allTAs = getUsersByRole("ta");
 
         for (User ta : allTAs) {
+            // Recalc to keep display in sync
+            recalcAndSaveWorkload(ta.getId());
+
             Map<String,String> wl = new HashMap<>();
-            wl.put("id", ta.getId());
-            wl.put("name", ta.getName());
-            wl.put("status", ta.getStatus());
-
-            // ========== 修正：计算总工时（每周工时 × 岗位持续周数） ==========
-            int autoCalculatedTotalHours = 0;
-            List<Application> acceptedApps = getAcceptedApplicationsByTA(ta.getId());
-
-            for (Application app : acceptedApps) {
-                Job job = findJobByJobId(app.getJobId());
-                if (job != null && job.getHours() != null && !job.getHours().trim().isEmpty()) {
-                    try {
-                        int weeklyHours = Integer.parseInt(job.getHours().trim());
-                        int weekCount = parseDurationWeekCount(job.getDuration());
-                        autoCalculatedTotalHours += weeklyHours * weekCount;
-                    } catch (NumberFormatException e) {
-                        // 忽略格式错误的工时
-                    }
-                }
-            }
-
-            // 优先级：如果Admin手动设置了工时，优先使用手动值；否则使用自动计算值
-            int finalHours = ta.getWorkload() > 0 ? ta.getWorkload() : autoCalculatedTotalHours;
-
-            wl.put("totalHours", String.valueOf(finalHours));
-            wl.put("positions", String.valueOf(acceptedApps.size()));
+            wl.put("id",         ta.getId());
+            wl.put("name",       ta.getName());
+            wl.put("status",     ta.getStatus());
+            wl.put("totalHours", String.valueOf(ta.getWorkload()));
+            wl.put("positions",  String.valueOf(getAcceptedApplicationsByTA(ta.getId()).size()));
             result.add(wl);
         }
 
         return result;
     }
-
-    /** Calculates total workload for a TA: sum of (hours/week × weeks) across all accepted applications. */
-    public int calculateTaWorkload(String taId) {
-        int total = 0;
-        for (Application a : applications) {
-            if (taId.equals(a.getTaId()) && "accepted".equals(a.getStatus())) {
-                Job j = findJobByJobId(a.getJobId());
-                if (j != null && j.getHours() != null) {
-                    try {
-                        String h = j.getHours().replaceAll("[^0-9]", "");
-                        if (!h.isEmpty()) {
-                            total += Integer.parseInt(h) * parseDurationWeekCount(j.getDuration());
-                        }
-                    } catch (Exception ignored) {}
-                }
-            }
-        }
-        return total;
-    }
-
-    /** Calculates total workload for a TA: sum of (hours/week × weeks) across all accepted applications. */
-    public int calculateTaWorkload(String taId) {
-        int total = 0;
-        for (Application a : applications) {
-            if (taId.equals(a.getTaId()) && "accepted".equals(a.getStatus())) {
-                Job j = findJobByJobId(a.getJobId());
-                if (j != null && j.getHours() != null) {
-                    try {
-                        String h = j.getHours().replaceAll("[^0-9]", "");
-                        if (!h.isEmpty()) {
-                            total += Integer.parseInt(h) * parseDurationWeekCount(j.getDuration());
-                        }
-                    } catch (Exception ignored) {}
-                }
-            }
-        }
-        return total;
-    }
-
-    /** Calculates total workload for a TA: sum of (hours/week × weeks) across all accepted applications. */
-    public int calculateTaWorkload(String taId) {
-        int total = 0;
-        for (Application a : applications) {
-            if (taId.equals(a.getTaId()) && "accepted".equals(a.getStatus())) {
-                Job j = findJobByJobId(a.getJobId());
-                if (j != null && j.getHours() != null) {
-                    try {
-                        String h = j.getHours().replaceAll("[^0-9]", "");
-                        if (!h.isEmpty()) {
-                            total += Integer.parseInt(h) * parseDurationWeekCount(j.getDuration());
-                        }
-                    } catch (Exception ignored) {}
-                }
-            }
-        }
-        return total;
-    }
-
     private int countAcceptedPositions(String taId) {
         int count = 0;
         for (Application a : applications) {

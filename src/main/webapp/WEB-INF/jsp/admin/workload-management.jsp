@@ -49,9 +49,9 @@
                                                 int hours = 0;
                                                 try { hours = Integer.parseInt(wl.getOrDefault("totalHours","0")); } catch(Exception e){}
                                                 // ========== 已更新：和AdminServlet保持完全一致的阈值 ==========
-                                                // Light: < 80h | Normal: 80h - 150h | Overloaded: > 150h
-                                                String wlStatus = hours > 150 ? "Overloaded" : hours >= 80 ? "Normal" : "Light";
-                                                String wlClass  = hours > 150 ? "badge-rejected" : hours >= 80 ? "badge-accepted" : "badge-pending";
+                                                // Light: < 40h | Normal: 40h - 80h | Overloaded: > 80h
+                                                String wlStatus = hours > 80 ? "Overloaded" : hours >= 40 ? "Normal" : "Light";
+                                                String wlClass  = hours > 80 ? "badge-rejected" : hours >= 40 ? "badge-accepted" : "badge-pending";
                                                 boolean isInactive = "inactive".equals(wl.get("status"));
                                     %>
 

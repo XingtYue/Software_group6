@@ -277,8 +277,8 @@ public class MOServlet extends BaseServlet {
             reqBuilder.append("Openings (total positions needed): ").append(job.getOpenings()).append("\n");
 
             // 4. 收集 Gemini 新增参数
-            // ── 该 TA 当前已录用总工时
-            int currentWorkload = ds.calculateTaWorkload(app.getTaId());
+            // ── 该 TA 当前已录用总工时（直接从 user 读取，由状态变更时自动维护）
+            int currentWorkload = ta != null ? ta.getWorkload() : 0;
             // ── 当前岗位报名人数 / 已录取人数
             List<Application> jobApps = ds.getApplicationsByJob(app.getJobId());
             int applicantCount = jobApps.size();

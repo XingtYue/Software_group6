@@ -105,6 +105,15 @@
                     <p class="stat-value green">${acceptedPositions}</p>
                 </div>
 
+                <p class="sidebar-title" style="margin-top:20px;">WORKLOAD</p>
+                <div class="stat-card ${taWorkload > 80 ? 'red' : taWorkload > 40 ? 'yellow' : 'green'}">
+                    <p class="stat-label">Total Committed Hours</p>
+                    <p class="stat-value ${taWorkload > 80 ? 'red' : taWorkload > 40 ? 'yellow' : 'green'}">${taWorkload} h</p>
+                </div>
+                <p style="font-size:11px; color:#94a3b8; margin:4px 0 16px 0; padding:0 4px;">
+                    Based on accepted positions (hours/week × weeks)
+                </p>
+
                 <div class="sidebar-section">
                     <p class="sidebar-section-title">Quick Actions</p>
                     <div class="space-y-3">

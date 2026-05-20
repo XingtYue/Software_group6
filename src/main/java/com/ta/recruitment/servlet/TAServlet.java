@@ -45,6 +45,8 @@ public class TAServlet extends BaseServlet {
             req.setAttribute("activeApplications", activeApps);
             req.setAttribute("totalJobs",          jobs.size());
             req.setAttribute("acceptedPositions",  acceptedPositions);
+            User taUserJobs = ds.findUserById(userId);
+            req.setAttribute("taWorkload", taUserJobs != null ? taUserJobs.getWorkload() : 0);
             req.getRequestDispatcher("/WEB-INF/jsp/ta/job-list.jsp").forward(req, resp);
 
         } else if (path.startsWith("/jobs/")) {
@@ -100,13 +102,18 @@ public class TAServlet extends BaseServlet {
                         app.put("jobDuration", job.getDuration());
                         app.put("jobStatus", job.getStatus());
                         app.put("jobDescription", job.getDescription());
+                        // MO 邮箱（供 accepted 状态显示联系方式）
+                        User moUser = ds.findUserById(job.getPostedBy());
+                        app.put("moEmail", moUser != null && moUser.getEmail() != null ? moUser.getEmail() : "");
+                        app.put("moName",  moUser != null && moUser.getName()  != null ? moUser.getName()  : "");
                     } else {
-                        // 找不到 Job 时给默认值，防止前端报错
                         app.put("jobDepartment", "N/A");
                         app.put("jobHours", "N/A");
                         app.put("jobDuration", "N/A");
                         app.put("jobStatus", "N/A");
                         app.put("jobDescription", "N/A");
+                        app.put("moEmail", "");
+                        app.put("moName",  "");
                     }
 
                     // AI 分析字段
@@ -132,6 +139,8 @@ public class TAServlet extends BaseServlet {
             req.setAttribute("acceptedCount", accepted);
             req.setAttribute("rejectedCount", rejected);
             req.setAttribute("totalCount",    apps.size());
+            User taUser = ds.findUserById(userId);
+            req.setAttribute("taWorkload", taUser != null ? taUser.getWorkload() : 0);
             req.getRequestDispatcher("/WEB-INF/jsp/ta/application-status.jsp").forward(req, resp);
 
         } else if (path.equals("/profile") || path.equals("/profile/")) {
@@ -409,8 +418,9 @@ public class TAServlet extends BaseServlet {
         int acceptedCount  = 0;
         for (Application a2 : jobApps) if ("accepted".equals(a2.getStatus())) acceptedCount++;
 
-        // 5. TA 当前工作量
-        int currentWorkload = ds.calculateTaWorkload(taId);
+        // 5. TA 当前工作量（直接从 user 读取，由状态变更时自动维护）
+        User taUser = ds.findUserById(taId);
+        int currentWorkload = taUser != null ? taUser.getWorkload() : 0;
 
         // 6. 同课程其他活跃岗位（TA 尚未申请的）
         StringBuilder otherJobsSb = new StringBuilder();

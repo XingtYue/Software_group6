@@ -47,6 +47,7 @@
 
                                     // 职位工作量小时数
                                     String jobHours = app.getOrDefault("jobHours", "0");
+                                    String jobWeeks = app.getOrDefault("jobDurationWeeks", "1");
                         %>
                         <!-- 卡片样式和 Application Management 完全一致 -->
                         <div class="applicant-card app-row">
@@ -56,7 +57,7 @@
                                         <h3 class="text-lg"><%= app.getOrDefault("jobTitle","Unknown Job") %></h3>
                                         <span class="badge <%= badgeClass %>"><%= statusLabel %></span>
                                         <!-- 职位工作量显示 -->
-                                        <span class="badge" style="background:linear-gradient(135deg,#4f46e5,#6366f1);color:#fff;border:none;">Workload: <%= jobHours %>h/week</span>
+                                        <span class="badge" style="background:linear-gradient(135deg,#4f46e5,#6366f1);color:#fff;border:none;">Workload: <%= jobHours %>h/week × <%= jobWeeks %> weeks</span>
                                     </div>
                                     <p class="text-gray-600 mb-1">TA: ${ta.name}</p>
                                     <p class="text-sm text-gray-500">
@@ -109,18 +110,15 @@
 
                                 <div style="display:flex;align-items:center;gap:16px;">
                                     <div style="flex:1;">
-                                        <label for="hours" class="block mb-2 font-medium">Total Weekly Hours</label>
+                                        <label for="hours" class="block mb-2 font-medium">Total Hours (h/week × weeks)</label>
                                         <%
                                             User ta = (User) request.getAttribute("ta");
-                                            int manualWorkload = ta.getWorkload();
-                                            Integer autoWorkloadObj = (Integer) request.getAttribute("totalWeeklyHours");
-                                            int autoWorkload = autoWorkloadObj != null ? autoWorkloadObj : 0;
-                                            int defaultHours = manualWorkload > 0 ? manualWorkload : autoWorkload;
+                                            int currentWorkload = ta.getWorkload();
                                         %>
-                                        <input type="number" id="hours" name="hours" min="0" max="40"
-                                               value="<%= defaultHours %>"
+                                        <input type="number" id="hours" name="hours" min="0"
+                                               value="<%= currentWorkload %>"
                                                class="form-input" style="width:100%;">
-                                        <p class="text-xs text-gray-500 mt-1">Enter 0 to revert to auto-calculated value</p>
+                                        <p class="text-xs text-gray-500 mt-1">Auto-calculated from accepted positions. Enter 0 to reset.</p>
                                     </div>
                                     <div style="align-self:flex-end;">
                                         <button type="submit" class="btn btn-primary">Save Workload</button>
@@ -145,12 +143,8 @@
                 </div>
                 <div class="stat-card green">
                     <p class="stat-label">Current Total Hours</p>
-                    <%
-                        int displayHours = manualWorkload > 0 ? manualWorkload : autoWorkload;
-                        String note = manualWorkload > 0 ? "(Manual)" : "(Auto-calculated)";
-                    %>
-                    <p class="stat-value green"><%= displayHours %>h / week</p>
-                    <p class="text-xs text-gray-500 mt-1"><%= note %></p>
+                    <p class="stat-value green"><%= currentWorkload %> h</p>
+                    <p class="text-xs text-gray-500 mt-1">(hours/week × weeks)</p>
                 </div>
             </div>
         </div>
