@@ -245,6 +245,11 @@ public class DataStore {
         }
     }
 
+    public synchronized void deleteJob(String jobId) {
+        jobs.removeIf(j -> j.getJobId().equals(jobId));
+        saveJobs();
+    }
+
     // ==================== APPLICATION OPERATIONS ====================
     /**
      * 校验：TA是否重复申请了同一个岗位
