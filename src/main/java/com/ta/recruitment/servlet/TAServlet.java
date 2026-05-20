@@ -1,12 +1,16 @@
 package com.ta.recruitment.servlet;
 
 import com.ta.recruitment.model.*;
+import com.ta.recruitment.service.GeminiService;
+import org.apache.poi.xwpf.usermodel.XWPFDocument;
+import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.*;
 import java.io.*;
+import java.nio.file.Files;
 import java.util.*;
 
 @WebServlet("/ta/*")
@@ -41,16 +45,26 @@ public class TAServlet extends BaseServlet {
             req.setAttribute("activeApplications", activeApps);
             req.setAttribute("totalJobs",          jobs.size());
             req.setAttribute("acceptedPositions",  acceptedPositions);
+            User taUserJobs = ds.findUserById(userId);
+            req.setAttribute("taWorkload", taUserJobs != null ? taUserJobs.getWorkload() : 0);
             req.getRequestDispatcher("/WEB-INF/jsp/ta/job-list.jsp").forward(req, resp);
 
         } else if (path.startsWith("/jobs/")) {
             String jobId = path.substring("/jobs/".length());
             Job job = ds.findJobByJobId(jobId);
             if (job == null) { resp.sendError(404); return; }
-            req.setAttribute("job",          job.toMap());
-            req.setAttribute("jobId",        jobId);
-            req.setAttribute("hasApplied",   ds.hasApplied(userId, jobId));
-            req.setAttribute("requirements", job.getRequirements());
+            List<Application> jobApps = ds.getApplicationsByJob(jobId);
+            int acceptedCount = 0;
+            for (Application a : jobApps) if ("accepted".equals(a.getStatus())) acceptedCount++;
+            boolean isFull = acceptedCount >= job.getOpenings();
+            req.setAttribute("job",            job.toMap());
+            req.setAttribute("jobId",          jobId);
+            req.setAttribute("hasApplied",     ds.hasApplied(userId, jobId));
+            req.setAttribute("requirements",   job.getRequirements());
+            req.setAttribute("openings",       job.getOpenings());
+            req.setAttribute("applicantCount", jobApps.size());
+            req.setAttribute("acceptedCount",  acceptedCount);
+            req.setAttribute("isFull",         isFull);
             req.getRequestDispatcher("/WEB-INF/jsp/ta/job-detail.jsp").forward(req, resp);
 
         } else if (path.startsWith("/apply/")) {
@@ -88,14 +102,26 @@ public class TAServlet extends BaseServlet {
                         app.put("jobDuration", job.getDuration());
                         app.put("jobStatus", job.getStatus());
                         app.put("jobDescription", job.getDescription());
+                        // MO 邮箱（供 accepted 状态显示联系方式）
+                        User moUser = ds.findUserById(job.getPostedBy());
+                        app.put("moEmail", moUser != null && moUser.getEmail() != null ? moUser.getEmail() : "");
+                        app.put("moName",  moUser != null && moUser.getName()  != null ? moUser.getName()  : "");
                     } else {
-                        // 找不到 Job 时给默认值，防止前端报错
                         app.put("jobDepartment", "N/A");
                         app.put("jobHours", "N/A");
                         app.put("jobDuration", "N/A");
                         app.put("jobStatus", "N/A");
                         app.put("jobDescription", "N/A");
+                        app.put("moEmail", "");
+                        app.put("moName",  "");
                     }
+
+                    // AI 分析字段
+                    app.put("aiMatchScore",                a.getAiMatchScore() != null ? String.valueOf(a.getAiMatchScore()) : "");
+                    app.put("aiMatchedSkills",             a.getAiMatchedSkills()             != null ? a.getAiMatchedSkills()             : "");
+                    app.put("aiMissingSkills",             a.getAiMissingSkills()             != null ? a.getAiMissingSkills()             : "");
+                    app.put("aiReasoning",                 a.getAiReasoning()                 != null ? a.getAiReasoning()                 : "");
+                    app.put("aiRecommendedAlternativeJob", a.getAiRecommendedAlternativeJob() != null ? a.getAiRecommendedAlternativeJob() : "");
 
                     appMaps.add(app); // 把构建好的 Map 加进去
 
@@ -113,6 +139,8 @@ public class TAServlet extends BaseServlet {
             req.setAttribute("acceptedCount", accepted);
             req.setAttribute("rejectedCount", rejected);
             req.setAttribute("totalCount",    apps.size());
+            User taUser = ds.findUserById(userId);
+            req.setAttribute("taWorkload", taUser != null ? taUser.getWorkload() : 0);
             req.getRequestDispatcher("/WEB-INF/jsp/ta/application-status.jsp").forward(req, resp);
 
         } else if (path.equals("/profile") || path.equals("/profile/")) {
@@ -159,16 +187,26 @@ public class TAServlet extends BaseServlet {
                 return;
             }
 
-// ========== 校验3：同一课程是否超过2个岗位申请 ==========
-            int appliedCount = ds.countApplicationsInSameCourse(userId, job.getCourseCode());
-            if (appliedCount >= 2) {
-                req.setAttribute("errorMsg", "You can apply for a maximum of 2 positions per course, you have reached the application limit!");
-                req.setAttribute("job", job.toMap());
-                req.setAttribute("jobId", jobId);
-                req.setAttribute("hasApplied", false);
-                req.setAttribute("requirements", job.getRequirements());
-                req.getRequestDispatcher("/WEB-INF/jsp/ta/job-detail.jsp").forward(req, resp);
-                return;
+            // ========== 校验2b：岗位是否已满员 ==========
+            {
+                List<Application> jobAppsCheck = ds.getApplicationsByJob(jobId);
+                int acceptedCheck = 0;
+                for (Application a : jobAppsCheck) if ("accepted".equals(a.getStatus())) acceptedCheck++;
+                if (acceptedCheck >= job.getOpenings()) {
+                    int acceptedCount2 = acceptedCheck;
+                    List<Application> jobApps2 = jobAppsCheck;
+                    req.setAttribute("errorMsg", "This position is now full (" + acceptedCount2 + "/" + job.getOpenings() + " accepted). Applications are no longer accepted.");
+                    req.setAttribute("job", job.toMap());
+                    req.setAttribute("jobId", jobId);
+                    req.setAttribute("hasApplied", false);
+                    req.setAttribute("isFull", true);
+                    req.setAttribute("openings", job.getOpenings());
+                    req.setAttribute("acceptedCount", acceptedCount2);
+                    req.setAttribute("applicantCount", jobApps2.size());
+                    req.setAttribute("requirements", job.getRequirements());
+                    req.getRequestDispatcher("/WEB-INF/jsp/ta/job-detail.jsp").forward(req, resp);
+                    return;
+                }
             }
 
             // ========== 校验通过，创建申请记录 ==========
@@ -225,7 +263,68 @@ public class TAServlet extends BaseServlet {
 
 // 保存申请
             ds.addApplication(app);
+
+            // 后台异步 AI 分析（不阻塞 TA 跳转）
+            final String  fAppId       = app.getId();
+            final String  fCvFileName  = finalCvFileName;
+            final String  fCoverLetter = app.getCoverLetter();
+            final String  fUploadsDir  = getServletContext().getRealPath("/WEB-INF/uploads/cv/");
+            final User    fTa          = ta;
+            final Job     fJob         = job;
+            final String  fUserId      = userId;
+            Thread aiThread = new Thread(() -> {
+                try {
+                    runGeminiAnalysis(fAppId, fCvFileName, fCoverLetter,
+                                      fUploadsDir, fTa, fJob, fUserId, ds);
+                } catch (Exception ignored) {}
+            });
+            aiThread.setDaemon(true);
+            aiThread.start();
+
             resp.sendRedirect(req.getContextPath() + "/ta/applications");
+        } else if (path.equals("/analyze-application") || path.equals("/analyze-application/")) {
+            // ── TA 手动触发/重新分析（AJAX POST，返回纯 JSON）─────────────────
+            resp.setContentType("application/json");
+            resp.setCharacterEncoding("UTF-8");
+            PrintWriter out = resp.getWriter();
+
+            String appId = req.getParameter("applicationId");
+            if (appId == null || appId.trim().isEmpty()) {
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                out.write("{\"error\":\"Missing applicationId\"}");
+                return;
+            }
+            Application app = ds.findApplicationById(appId);
+            if (app == null || !userId.equals(app.getTaId())) {
+                resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                out.write("{\"error\":\"Application not found or permission denied\"}");
+                return;
+            }
+            Job job = ds.findJobByJobId(app.getJobId());
+            if (job == null) {
+                resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                out.write("{\"error\":\"Job not found\"}");
+                return;
+            }
+
+            User ta = ds.findUserById(userId);
+            String uploadsDir = getServletContext().getRealPath("/WEB-INF/uploads/cv/");
+            try {
+                Application aiResult = runGeminiAnalysis(
+                        appId, app.getCvFileName(), app.getCoverLetter(),
+                        uploadsDir, ta, job, userId, ds);
+                String score = String.valueOf(aiResult.getAiMatchScore() != null ? aiResult.getAiMatchScore() : 0);
+                out.write("{\"aiMatchScore\":" + score
+                    + ",\"aiMatchedSkills\":\""  + jsonEsc(aiResult.getAiMatchedSkills())             + "\""
+                    + ",\"aiMissingSkills\":\""   + jsonEsc(aiResult.getAiMissingSkills())             + "\""
+                    + ",\"aiReasoning\":\""       + jsonEsc(aiResult.getAiReasoning())                 + "\""
+                    + ",\"aiRecommendedAlternativeJob\":\"" + jsonEsc(aiResult.getAiRecommendedAlternativeJob()) + "\""
+                    + ",\"cached\":false}");
+            } catch (Exception e) {
+                resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                out.write("{\"error\":\"" + jsonEsc(e.getMessage()) + "\"}");
+            }
+
         } else if (path.equals("/profile") || path.equals("/profile/")) {
             String action = req.getParameter("action");
             if ("uploadCV".equals(action)) {
@@ -249,6 +348,124 @@ public class TAServlet extends BaseServlet {
         } else {
             resp.sendRedirect(req.getContextPath() + "/ta/jobs");
         }
+    }
+
+    /**
+     * Builds CV context, reads CV file, collects competition/workload params,
+     * calls GeminiService, persists the result, and returns the populated Application.
+     * Safe to call from both background threads and the AJAX endpoint.
+     */
+    private Application runGeminiAnalysis(String appId, String cvFileName, String coverLetter,
+                                          String uploadsDir, User ta, Job job,
+                                          String taId, DataStore ds) throws Exception {
+        // 1. CV 文本上下文
+        StringBuilder cvBuilder = new StringBuilder();
+        if (ta != null) {
+            cvBuilder.append("Name: ").append(ta.getName()).append("\n");
+            if (ta.getDepartment() != null && !ta.getDepartment().isEmpty())
+                cvBuilder.append("Department: ").append(ta.getDepartment()).append("\n");
+            if (ta.getPhone() != null && !ta.getPhone().isEmpty())
+                cvBuilder.append("Phone: ").append(ta.getPhone()).append("\n");
+        }
+        if (coverLetter != null && !coverLetter.trim().isEmpty())
+            cvBuilder.append("Cover Letter:\n").append(coverLetter.trim()).append("\n");
+
+        // 2. 读取 CV 文件
+        byte[] cvPdfBytes = null;
+        String fname = cvFileName;
+        if ((fname == null || fname.isEmpty()) && ta != null) fname = ta.getCvFileName();
+        if (fname != null && !fname.isEmpty()) {
+            File cvFile = new File(uploadsDir, fname);
+            if (cvFile.exists() && cvFile.length() > 0) {
+                String lower = fname.toLowerCase();
+                if (lower.endsWith(".pdf")) {
+                    byte[] bytes = Files.readAllBytes(cvFile.toPath());
+                    if (bytes.length > 4 && bytes[0] == '%' && bytes[1] == 'P'
+                            && bytes[2] == 'D' && bytes[3] == 'F') {
+                        cvPdfBytes = bytes;
+                    }
+                } else if (lower.endsWith(".docx")) {
+                    try (XWPFDocument doc = new XWPFDocument(new FileInputStream(cvFile))) {
+                        StringBuilder wordText = new StringBuilder();
+                        for (XWPFParagraph p : doc.getParagraphs()) {
+                            String t = p.getText().trim();
+                            if (!t.isEmpty()) wordText.append(t).append("\n");
+                        }
+                        if (wordText.length() > 0)
+                            cvBuilder.append("\nCV Content (from Word document):\n").append(wordText);
+                    } catch (Exception ignored) {}
+                }
+            }
+        }
+
+        // 3. 岗位要求文本
+        StringBuilder reqBuilder = new StringBuilder();
+        reqBuilder.append("Job Title: ").append(job.getTitle()).append("\n");
+        reqBuilder.append("Course: ").append(job.getCourseName())
+                  .append(" (").append(job.getCourseCode()).append(")\n");
+        reqBuilder.append("Position Type: ").append(job.getPositionType()).append("\n");
+        if (job.getDescription() != null && !job.getDescription().isEmpty())
+            reqBuilder.append("Description: ").append(job.getDescription()).append("\n");
+        if (job.getRequirements() != null && !job.getRequirements().isEmpty()) {
+            reqBuilder.append("Requirements:\n");
+            for (String r : job.getRequirements()) reqBuilder.append("- ").append(r).append("\n");
+        }
+        reqBuilder.append("Openings (total positions needed): ").append(job.getOpenings()).append("\n");
+
+        // 4. 竞争参数
+        List<Application> jobApps = ds.getApplicationsByJob(job.getJobId());
+        int applicantCount = jobApps.size();
+        int acceptedCount  = 0;
+        for (Application a2 : jobApps) if ("accepted".equals(a2.getStatus())) acceptedCount++;
+
+        // 5. TA 当前工作量（直接从 user 读取，由状态变更时自动维护）
+        User taUser = ds.findUserById(taId);
+        int currentWorkload = taUser != null ? taUser.getWorkload() : 0;
+
+        // 6. 同课程其他活跃岗位（TA 尚未申请的）
+        StringBuilder otherJobsSb = new StringBuilder();
+        for (Job j2 : ds.getAllJobs()) {
+            if (!j2.getJobId().equals(job.getJobId())
+                    && job.getCourseCode() != null
+                    && job.getCourseCode().equals(j2.getCourseCode())
+                    && "active".equals(j2.getStatus())
+                    && !ds.hasApplied(taId, j2.getJobId())) {
+                List<Application> j2Apps = ds.getApplicationsByJob(j2.getJobId());
+                int j2Accepted = 0;
+                for (Application a2 : j2Apps) if ("accepted".equals(a2.getStatus())) j2Accepted++;
+                otherJobsSb.append("- ").append(j2.getTitle())
+                           .append(" (").append(j2.getPositionType()).append(")")
+                           .append(", openings: ").append(j2.getOpenings())
+                           .append(", accepted: ").append(j2Accepted)
+                           .append(", applicants: ").append(j2Apps.size());
+                if (j2.getRequirements() != null && !j2.getRequirements().isEmpty())
+                    otherJobsSb.append(", requirements: ")
+                               .append(String.join(", ", j2.getRequirements()));
+                otherJobsSb.append("\n");
+            }
+        }
+
+        // 7. 调用 Gemini
+        GeminiService gemini = new GeminiService();
+        Application aiResult = gemini.analyzeMatch(
+                cvBuilder.toString(), reqBuilder.toString(), cvPdfBytes,
+                currentWorkload, applicantCount, acceptedCount, job.getOpenings(), false, otherJobsSb.toString());
+
+        // 8. 持久化
+        ds.updateApplicationAiResult(
+                appId,
+                aiResult.getAiMatchScore()                != null ? aiResult.getAiMatchScore() : 0,
+                aiResult.getAiMatchedSkills()             != null ? aiResult.getAiMatchedSkills()             : "",
+                aiResult.getAiMissingSkills()             != null ? aiResult.getAiMissingSkills()             : "",
+                aiResult.getAiReasoning()                 != null ? aiResult.getAiReasoning()                 : "",
+                aiResult.getAiRecommendedAlternativeJob() != null ? aiResult.getAiRecommendedAlternativeJob() : "");
+        return aiResult;
+    }
+
+    private String jsonEsc(String s) {
+        if (s == null) return "";
+        return s.replace("\\", "\\\\").replace("\"", "\\\"")
+                .replace("\n", "\\n").replace("\r", "");
     }
 
     private String saveCvPart(Part part, String userId, String uploadDir) {

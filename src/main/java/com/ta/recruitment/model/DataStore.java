@@ -341,59 +341,65 @@ public class DataStore {
         if (a != null) {
             a.setStatus(status);
             saveApplications();
+            recalcAndSaveWorkload(a.getTaId());
         }
     }
 
-    public void updateApplicationAiResult(String appId, int score, String matched, String missing, String reasoning) {
+    public void updateApplicationAiResult(String appId, int score, String matched, String missing,
+                                          String reasoning, String altJob) {
         Application a = findApplicationById(appId);
         if (a != null) {
             a.setAiMatchScore(score);
             a.setAiMatchedSkills(matched);
             a.setAiMissingSkills(missing);
             a.setAiReasoning(reasoning);
+            a.setAiRecommendedAlternativeJob(altJob != null ? altJob : "");
             saveApplications();
         }
     }
 
     // ==================== WORKLOAD ====================
+
+    /** Recalculates workload for one TA and persists it to users.json. */
+    private void recalcAndSaveWorkload(String taId) {
+        User ta = findUserById(taId);
+        if (ta == null) return;
+        int total = 0;
+        for (Application a : applications) {
+            if (taId.equals(a.getTaId()) && "accepted".equals(a.getStatus())) {
+                Job j = findJobByJobId(a.getJobId());
+                if (j != null && j.getHours() != null) {
+                    try {
+                        String h = j.getHours().replaceAll("[^0-9]", "");
+                        if (!h.isEmpty())
+                            total += Integer.parseInt(h) * parseDurationWeekCount(j.getDuration());
+                    } catch (Exception ignored) {}
+                }
+            }
+        }
+        ta.setWorkload(total);
+        saveUsers();
+    }
+
     public List<Map<String,String>> getWorkloadData() {
         List<Map<String,String>> result = new ArrayList<>();
         List<User> allTAs = getUsersByRole("ta");
 
         for (User ta : allTAs) {
+            // Recalc to keep display in sync
+            recalcAndSaveWorkload(ta.getId());
+
             Map<String,String> wl = new HashMap<>();
-            wl.put("id", ta.getId());
-            wl.put("name", ta.getName());
-            wl.put("status", ta.getStatus());
-
-            // ========== 修正：计算总工时（每周工时 × 岗位持续周数） ==========
-            int autoCalculatedTotalHours = 0;
-            List<Application> acceptedApps = getAcceptedApplicationsByTA(ta.getId());
-
-            for (Application app : acceptedApps) {
-                Job job = findJobByJobId(app.getJobId());
-                if (job != null && job.getHours() != null && !job.getHours().trim().isEmpty()) {
-                    try {
-                        int weeklyHours = Integer.parseInt(job.getHours().trim());
-                        int weekCount = parseDurationWeekCount(job.getDuration());
-                        autoCalculatedTotalHours += weeklyHours * weekCount;
-                    } catch (NumberFormatException e) {
-                        // 忽略格式错误的工时
-                    }
-                }
-            }
-
-            // 优先级：如果Admin手动设置了工时，优先使用手动值；否则使用自动计算值
-            int finalHours = ta.getWorkload() > 0 ? ta.getWorkload() : autoCalculatedTotalHours;
-
-            wl.put("totalHours", String.valueOf(finalHours));
-            wl.put("positions", String.valueOf(acceptedApps.size()));
+            wl.put("id",         ta.getId());
+            wl.put("name",       ta.getName());
+            wl.put("status",     ta.getStatus());
+            wl.put("totalHours", String.valueOf(ta.getWorkload()));
+            wl.put("positions",  String.valueOf(getAcceptedApplicationsByTA(ta.getId()).size()));
             result.add(wl);
         }
 
         return result;
     }
-
     private int countAcceptedPositions(String taId) {
         int count = 0;
         for (Application a : applications) {
@@ -587,6 +593,7 @@ public class DataStore {
             sb.append("\"postedByName\":\"").append(esc(j.getPostedByName() != null ? j.getPostedByName() : "")).append("\",");
             sb.append("\"status\":\"").append(esc(j.getStatus() != null ? j.getStatus() : "active")).append("\",");
             sb.append("\"postedDate\":\"").append(esc(j.getPostedDate() != null ? j.getPostedDate() : "")).append("\",");
+            sb.append("\"openings\":\"").append(j.getOpenings()).append("\",");
             sb.append("\"requirements\":[");
             List<String> reqs = j.getRequirements();
             if (reqs != null) {
@@ -624,7 +631,8 @@ public class DataStore {
             sb.append("\"aiMatchScore\":\"").append(esc(a.getAiMatchScore() != null ? String.valueOf(a.getAiMatchScore()) : "")).append("\",");
             sb.append("\"aiMatchedSkills\":\"").append(esc(a.getAiMatchedSkills() != null ? a.getAiMatchedSkills() : "")).append("\",");
             sb.append("\"aiMissingSkills\":\"").append(esc(a.getAiMissingSkills() != null ? a.getAiMissingSkills() : "")).append("\",");
-            sb.append("\"aiReasoning\":\"").append(esc(a.getAiReasoning() != null ? a.getAiReasoning() : "")).append("\"");
+            sb.append("\"aiReasoning\":\"").append(esc(a.getAiReasoning() != null ? a.getAiReasoning() : "")).append("\",");
+            sb.append("\"aiRecommendedAlternativeJob\":\"").append(esc(a.getAiRecommendedAlternativeJob() != null ? a.getAiRecommendedAlternativeJob() : "")).append("\"");
             sb.append("}");
             if (i < applications.size() - 1) sb.append(",");
             sb.append("\n");
@@ -681,6 +689,10 @@ public class DataStore {
             j.setPostedByName(r.get("postedByName"));
             j.setStatus(r.getOrDefault("status","active"));
             j.setPostedDate(r.get("postedDate"));
+            String openingsStr = r.get("openings");
+            if (openingsStr != null && !openingsStr.isEmpty()) {
+                try { j.setOpenings(Integer.parseInt(openingsStr)); } catch (NumberFormatException ignored) {}
+            }
             list.add(j);
         }
         return list;
@@ -711,6 +723,7 @@ public class DataStore {
             a.setAiMatchedSkills(r.get("aiMatchedSkills"));
             a.setAiMissingSkills(r.get("aiMissingSkills"));
             a.setAiReasoning(r.get("aiReasoning"));
+            a.setAiRecommendedAlternativeJob(r.getOrDefault("aiRecommendedAlternativeJob", ""));
             list.add(a);
         }
         return list;

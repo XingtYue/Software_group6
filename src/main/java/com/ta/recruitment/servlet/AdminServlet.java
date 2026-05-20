@@ -115,11 +115,11 @@ public class AdminServlet extends BaseServlet {
             int normal = 0, overloaded = 0, light = 0;
 
             // ========== 已更新：统一全局阈值 ==========
-            // Light: < 80h | Normal: 80h - 150h | Overloaded: > 150h
+            // Light: < 40h | Normal: 40h - 80h | Overloaded: > 40h
             for (Map<String,String> w : workloads) {
                 int h = parseInt(w.getOrDefault("totalHours", "0"));
-                if (h > 150) overloaded++;
-                else if (h >= 80) normal++;
+                if (h > 80) overloaded++;
+                else if (h >= 40) normal++;
                 else light++;
             }
 
@@ -137,29 +137,23 @@ public class AdminServlet extends BaseServlet {
             List<Application> taApps = ds.getApplicationsByTA(taId);
             List<Map<String,String>> taApplications = new ArrayList<>();
 
-            // 计算总工时（每周）
-            int totalWeeklyHours = 0;
-
             for (Application app : taApps) {
                 Map<String,String> map = app.toMap();
                 Job job = ds.findJobByJobId(app.getJobId());
-                String jobHours = job != null ? job.getHours() : "0";
-                map.put("jobHours", jobHours);
-                taApplications.add(map);
-
-                // 只累加已接受的岗位工时
-                if ("accepted".equals(app.getStatus())) {
-                    try {
-                        totalWeeklyHours += Integer.parseInt(jobHours.trim());
-                    } catch (NumberFormatException e) {
-                        // 忽略格式错误的工时
-                    }
+                if (job != null) {
+                    map.put("jobHours", job.getHours() != null ? job.getHours() : "0");
+                    map.put("jobDurationWeeks", String.valueOf(
+                        job.getDuration() != null && !job.getDuration().isEmpty()
+                            ? job.getDuration().split(",").length : 1));
+                } else {
+                    map.put("jobHours", "0");
+                    map.put("jobDurationWeeks", "1");
                 }
+                taApplications.add(map);
             }
 
             req.setAttribute("ta", ta);
             req.setAttribute("taApplications", taApplications);
-            req.setAttribute("totalWeeklyHours", totalWeeklyHours);
             forward(req, resp, "/WEB-INF/jsp/admin/edit-workload.jsp");
 
         } else if (path.equals("/profile") || path.equals("/profile/")) {

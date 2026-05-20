@@ -342,6 +342,10 @@
       <div class="sidebar">
         <p class="sidebar-title">COURSE STATS</p>
         <div class="stat-card">
+          <p class="stat-label">Openings</p>
+          <p class="stat-value">${openings != null ? openings : 1}</p>
+        </div>
+        <div class="stat-card">
           <p class="stat-label">Total Applicants</p>
           <p class="stat-value">${totalApplicants != null ? totalApplicants : 0}</p>
         </div>
@@ -356,6 +360,23 @@
         <div class="stat-card red">
           <p class="stat-label">Rejected</p>
           <p class="stat-value red">${rejectedCount != null ? rejectedCount : 0}</p>
+        </div>
+
+        <%-- 满员警告 --%>
+        <% Boolean isFull = (Boolean) request.getAttribute("isFull");
+           Integer openingsVal = (Integer) request.getAttribute("openings");
+           if (Boolean.TRUE.equals(isFull)) { %>
+        <div style="margin-top:12px;padding:10px 12px;background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;">
+          <p style="font-size:13px;font-weight:600;color:#b91c1c;margin:0 0 4px 0;">⚠️ Position Full</p>
+          <p style="font-size:12px;color:#7f1d1d;margin:0;line-height:1.5;">All <%= openingsVal != null ? openingsVal : 1 %> openings have been filled. New applications are blocked.</p>
+        </div>
+        <% } %>
+
+        <%-- 修改人数提示 --%>
+        <div style="margin-top:12px;padding:10px 12px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;">
+          <p style="font-size:12px;color:#0369a1;margin:0;line-height:1.5;">
+            💡 To change the number of openings, please contact an administrator.
+          </p>
         </div>
       </div>
     </div>
@@ -415,10 +436,11 @@
       </div>
 
       <div id="ai-result-panel" style="display:none; padding:16px; background:#f0f9ff; border:1px solid #0ea5e9; border-radius:8px;">
-        <div style="margin-bottom:12px;">
+        <div style="margin-bottom:12px; display:flex; align-items:center; gap:8px;">
           <span style="font-size:14px; font-weight:600; color:#0c4a6e;">MATCH SCORE:</span>
-          <span id="ai-score" style="font-size:20px; font-weight:700; color:#0284c7; margin-left:8px;"></span>
+          <span id="ai-score" style="font-size:20px; font-weight:700; color:#0284c7;"></span>
           <span style="font-size:14px; color:#475569;">/100</span>
+          <span id="ai-cached-badge" style="display:none; font-size:11px; background:#e0f2fe; color:#0369a1; padding:2px 8px; border-radius:99px; font-weight:600;">Cached</span>
         </div>
 
         <!-- 匹配技能 -->
@@ -434,7 +456,7 @@
         </div>
 
         <!-- 理由 -->
-        <div>
+        <div style="margin-bottom:10px;">
           <p style="font-size:13px; font-weight:600; color:#0c4a6e; margin:0 0 4px 0;">💡 Reasoning:</p>
           <p id="ai-reasoning" style="margin:0; font-size:13px; color:#334155; line-height:1.6; white-space:pre-wrap;"></p>
         </div>
@@ -465,7 +487,12 @@ var appDetails = {
     phone:      "<%= jsEsc(a.get("taPhone") != null ? a.get("taPhone") : "") %>",
     dept:       "<%= jsEsc(a.get("taDepartment") != null ? a.get("taDepartment") : "") %>",
     cover:      "<%= jsEsc(a.get("coverLetter") != null ? a.get("coverLetter") : "") %>",
-    cvFileName: "<%= jsEsc(a.get("cvFileName") != null ? a.get("cvFileName") : "") %>"
+    cvFileName: "<%= jsEsc(a.get("cvFileName") != null ? a.get("cvFileName") : "") %>",
+    aiScore:    "<%= jsEsc(a.get("aiMatchScore") != null ? a.get("aiMatchScore") : "") %>",
+    aiMatched:  "<%= jsEsc(a.get("aiMatchedSkills") != null ? a.get("aiMatchedSkills") : "") %>",
+    aiMissing:  "<%= jsEsc(a.get("aiMissingSkills") != null ? a.get("aiMissingSkills") : "") %>",
+    aiReason:   "<%= jsEsc(a.get("aiReasoning") != null ? a.get("aiReasoning") : "") %>",
+    aiAltJob:   "<%= jsEsc(a.get("aiRecommendedAlternativeJob") != null ? a.get("aiRecommendedAlternativeJob") : "") %>"
   }<%= i < allApps.size() - 1 ? "," : "" %>
 <% } %>
 };
@@ -476,14 +503,12 @@ function showDetails(appId) {
   var d = appDetails[appId];
   if (!d) return;
 
-  // 记录当前打开的申请 ID（AI 分析按钮需要用到）
   currentAppId = appId;
 
-  // 重置 AI 面板为初始状态
-  document.getElementById('ai-result-panel').style.display = 'none';
+  // 重置 AI 面板
   document.getElementById('ai-loading').style.display      = 'none';
+  document.getElementById('ai-result-panel').style.display = 'none';
   var btn = document.getElementById('ai-analyze-btn');
-  if (btn) { btn.disabled = false; btn.textContent = '🤖 Get AI Analysis Report'; }
 
   document.getElementById('modal-name').textContent  = d.name  || '(No name)';
   document.getElementById('modal-email').textContent = d.email || 'N/A';
@@ -506,6 +531,21 @@ function showDetails(appId) {
   } else {
     document.getElementById('modal-cv-section').style.display    = 'none';
     document.getElementById('modal-no-cv-section').style.display = '';
+  }
+
+  // 如果已有缓存的 AI 结果，直接显示，不需要用户点击按钮
+  if (d.aiScore !== '') {
+    renderAiResult({
+      aiMatchScore: d.aiScore,
+      aiMatchedSkills: d.aiMatched,
+      aiMissingSkills: d.aiMissing,
+      aiReasoning: d.aiReason,
+      aiRecommendedAlternativeJob: d.aiAltJob,
+      cached: true
+    });
+    if (btn) { btn.textContent = '🔄 Re-analyse'; btn.disabled = false; }
+  } else {
+    if (btn) { btn.textContent = '🤖 Get AI Analysis Report'; btn.disabled = false; }
   }
 
   document.getElementById('modal-overlay').classList.add('active');
@@ -544,26 +584,44 @@ function toggleJobDetails() {
   }
 }
 
+// ─── 公共渲染函数：将 AI 结果填入面板 ────────────────────────────────────
+function renderAiResult(data) {
+  var scoreEl   = document.getElementById('ai-score');
+  var matchedEl = document.getElementById('ai-matched');
+  var missingEl = document.getElementById('ai-missing');
+  var reasonEl  = document.getElementById('ai-reasoning');
+  var cachedBadge = document.getElementById('ai-cached-badge');
+
+  var score = parseInt(data.aiMatchScore, 10);
+  scoreEl.textContent   = isNaN(score) ? data.aiMatchScore : score;
+  matchedEl.textContent = data.aiMatchedSkills || '(none)';
+  missingEl.textContent = data.aiMissingSkills  || 'None';
+  reasonEl.textContent  = data.aiReasoning      || '';
+
+  scoreEl.style.color = score >= 70 ? '#16a34a' : score >= 50 ? '#d97706' : '#dc2626';
+
+  if (cachedBadge) cachedBadge.style.display = data.cached ? 'inline' : 'none';
+
+  document.getElementById('ai-loading').style.display      = 'none';
+  document.getElementById('ai-result-panel').style.display = 'block';
+}
+
 // ─── AI 匹配分析交互逻辑 ─────────────────────────────────────────────────
 (function () {
-  // 等 DOM 就绪后挂载事件（modal 是静态 HTML，按钮始终存在）
   document.addEventListener('DOMContentLoaded', function () {
     var btn = document.getElementById('ai-analyze-btn');
-    if (!btn) return; // 非 owner 页面不渲染此按钮
+    if (!btn) return;
 
     btn.addEventListener('click', function () {
       if (!currentAppId) return;
 
-      // 1. 禁用按钮 + 显示 Loading
       btn.disabled = true;
       btn.textContent = '⏳ Analyzing...';
       document.getElementById('ai-loading').style.display      = 'block';
       document.getElementById('ai-result-panel').style.display = 'none';
 
-      // 2. 构造 POST body（application/x-www-form-urlencoded）
       var body = 'applicationId=' + encodeURIComponent(currentAppId);
 
-      // 3. 发送 AJAX 请求
       fetch(ctxPath + '/mo/analyze-application', {
         method:  'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -580,29 +638,11 @@ function toggleJobDetails() {
         return response.json();
       })
       .then(function (data) {
-        // 4. 渲染结果到面板
-        var scoreEl   = document.getElementById('ai-score');
-        var matchedEl = document.getElementById('ai-matched');
-        var missingEl = document.getElementById('ai-missing');
-        var reasonEl  = document.getElementById('ai-reasoning');
-
-        scoreEl.textContent   = data.aiMatchScore;
-        matchedEl.textContent = data.aiMatchedSkills || '(none)';
-        missingEl.textContent = data.aiMissingSkills || 'None';
-        reasonEl.textContent  = data.aiReasoning     || '';
-
-        // 根据分数动态着色
-        var score = parseInt(data.aiMatchScore, 10);
-        scoreEl.style.color = score >= 70 ? '#16a34a' : score >= 50 ? '#d97706' : '#dc2626';
-
-        // 5. 隐藏 Loading，显示结果
-        document.getElementById('ai-loading').style.display      = 'none';
-        document.getElementById('ai-result-panel').style.display = 'block';
+        renderAiResult(data);
         btn.textContent = '🔄 Re-analyse';
         btn.disabled    = false;
       })
       .catch(function (err) {
-        // 6. 错误处理：恢复按钮，隐藏 loading，提示用户
         document.getElementById('ai-loading').style.display = 'none';
         btn.disabled    = false;
         btn.textContent = '🤖 Get AI Analysis Report';
