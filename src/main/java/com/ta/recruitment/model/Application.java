@@ -16,10 +16,11 @@ public class Application {
     private String positionType;
 
     // AI match analysis fields (populated by GeminiService)
-    private Integer aiMatchScore;      // 0-100
-    private String aiMatchedSkills;    // e.g. "Java, Agile"
-    private String aiMissingSkills;    // e.g. "Python"
-    private String aiReasoning;        // analysis summary
+    private Integer aiMatchScore;               // 0-100
+    private String aiMatchedSkills;             // e.g. "Java, Agile"
+    private String aiMissingSkills;             // e.g. "Python"
+    private String aiReasoning;                 // analysis summary (includes workload penalty note if triggered)
+    private String aiRecommendedAlternativeJob; // title of a better-fit open position, or "" if none
 
     public Application() {
         this.status = "pending";
@@ -91,6 +92,9 @@ public class Application {
     public String getAiReasoning() { return aiReasoning; }
     public void setAiReasoning(String aiReasoning) { this.aiReasoning = aiReasoning; }
 
+    public String getAiRecommendedAlternativeJob() { return aiRecommendedAlternativeJob; }
+    public void setAiRecommendedAlternativeJob(String v) { this.aiRecommendedAlternativeJob = v; }
+
     public java.util.Map<String,String> toMap() {
         java.util.Map<String,String> m = new java.util.LinkedHashMap<>();
         m.put("id", id);
@@ -113,6 +117,7 @@ public class Application {
         m.put("aiMatchedSkills", aiMatchedSkills != null ? aiMatchedSkills : "");
         m.put("aiMissingSkills", aiMissingSkills != null ? aiMissingSkills : "");
         m.put("aiReasoning", aiReasoning != null ? aiReasoning : "");
+        m.put("aiRecommendedAlternativeJob", aiRecommendedAlternativeJob != null ? aiRecommendedAlternativeJob : "");
         return m;
     }
 }

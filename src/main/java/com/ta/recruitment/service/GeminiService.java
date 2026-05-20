@@ -15,16 +15,11 @@ import java.util.Base64;
 
 /**
  * Calls the Google Gemini 2.5 Flash API to analyse how well a TA's CV
- * matches a job's requirements.
- *
- * Only Gson is used here (to parse the Gemini response).
- * All business-data persistence is handled by the caller via DataStore.
+ * matches a job's requirements, with workload penalty and competition-aware
+ * redirection logic built into the prompt.
  */
 public class GeminiService {
 
-    // ---------------------------------------------------------------
-    // CONFIGURATION — replace with your real key, or pass via env var
-    // ---------------------------------------------------------------
     private static final String API_KEY =
             System.getenv("GEMINI_API_KEY") != null
             ? System.getenv("GEMINI_API_KEY")
@@ -36,9 +31,6 @@ public class GeminiService {
 
     private static final int TIMEOUT_SECONDS = 60;
 
-    // ---------------------------------------------------------------
-    // DEPENDENCIES
-    // ---------------------------------------------------------------
     private final HttpClient httpClient;
     private final Gson gson;
 
@@ -54,31 +46,38 @@ public class GeminiService {
     // ---------------------------------------------------------------
 
     /**
-     * Sends CV text and job requirements to Gemini, then writes the
-     * analysis results (score, matched/missing skills, reasoning) back
-     * onto the supplied {@code application} object.
-     *
-     * @param cvContent       plain-text context (name, dept, cover letter)
-     * @param jobRequirements plain-text description of the job requirements
-     * @return the same {@code application} instance, enriched with AI fields
+     * Convenience overload — no PDF, no workload/competition context.
      */
-    public Application analyzeMatch(String cvContent, String jobRequirements) {
-        return analyzeMatch(cvContent, jobRequirements, null);
+    public Application analyzeMatch(String cvContent, String currentJobInfo) {
+        return analyzeMatch(cvContent, currentJobInfo, null, 0, 0, 0, 1, false, "");
     }
 
     /**
-     * Overload that also accepts the raw bytes of a PDF CV file.
-     * If {@code cvPdfBytes} is non-null, the PDF is sent as inline_data
-     * alongside the text prompt so Gemini reads the actual resume document.
+     * Analyses CV-to-job fit.
+     * <p>
+     * Workload overload (>80 h) is evaluated locally:
+     * if {@code applyWorkloadPenalty} is true (MO side) a strong warning is injected into
+     * the prompt asking the AI to deduct points; on the TA side it is ignored.
+     * <p>
+     * Competition (applicants > openings*2) never adds a prompt warning — the AI
+     * is simply given the other-jobs list and asked to recommend an alternative.
      *
-     * @param cvContent       plain-text context (name, dept, cover letter)
-     * @param jobRequirements plain-text description of the job requirements
-     * @param cvPdfBytes      raw bytes of the TA's CV PDF, or null if unavailable
+     * @param applyWorkloadPenalty true = MO side (deduct for overload); false = TA side (no deduction)
      */
-    public Application analyzeMatch(String cvContent, String jobRequirements, byte[] cvPdfBytes) {
+    public Application analyzeMatch(String cvContent,
+                                    String currentJobInfo,
+                                    byte[] cvPdfBytes,
+                                    int currentWorkload,
+                                    int applicantCount,
+                                    int acceptedCount,
+                                    int openings,
+                                    boolean applyWorkloadPenalty,
+                                    String otherAvailableJobs) {
         Application application = new Application();
 
-        String requestBody = buildRequestBody(cvContent, jobRequirements, cvPdfBytes);
+        String requestBody = buildRequestBody(
+                cvContent, currentJobInfo, cvPdfBytes,
+                currentWorkload, applicantCount, acceptedCount, openings, applyWorkloadPenalty, otherAvailableJobs);
 
         try {
             HttpRequest request = HttpRequest.newBuilder()
@@ -117,18 +116,20 @@ public class GeminiService {
     // BUILD REQUEST BODY
     // ---------------------------------------------------------------
 
-    /**
-     * Constructs the Gemini request JSON manually with StringBuilder,
-     * consistent with the project's no-framework JSON approach.
-     *
-     * Uses generationConfig.responseMimeType = "application/json" so
-     * the model returns bare JSON with no markdown fences.
-     */
-    private String buildRequestBody(String cvContent, String jobRequirements, byte[] cvPdfBytes) {
-        String prompt = buildPrompt(cvContent, jobRequirements, cvPdfBytes != null);
+    private String buildRequestBody(String cvContent,
+                                    String currentJobInfo,
+                                    byte[] cvPdfBytes,
+                                    int currentWorkload,
+                                    int applicantCount,
+                                    int acceptedCount,
+                                    int openings,
+                                    boolean applyWorkloadPenalty,
+                                    String otherAvailableJobs) {
+        String prompt = buildPrompt(
+                cvContent, currentJobInfo, cvPdfBytes != null,
+                currentWorkload, applicantCount, acceptedCount, openings, applyWorkloadPenalty, otherAvailableJobs);
         String escapedPrompt = escapeJson(prompt);
 
-        // Build the parts array: optionally prepend the PDF, then the text prompt
         StringBuilder parts = new StringBuilder();
         if (cvPdfBytes != null && cvPdfBytes.length > 0) {
             String b64 = Base64.getEncoder().encodeToString(cvPdfBytes);
@@ -152,48 +153,88 @@ public class GeminiService {
             + "}";
     }
 
-    /**
-     * Prompt template designed to produce stable, schema-compliant JSON
-     * with exactly 4 fields every time.
-     */
-    private String buildPrompt(String cvContent, String jobRequirements, boolean hasPdf) {
+    private String buildPrompt(String cvContent,
+                               String currentJobInfo,
+                               boolean hasPdf,
+                               int currentWorkload,
+                               int applicantCount,
+                               int acceptedCount,
+                               int openings,
+                               boolean applyWorkloadPenalty,
+                               String otherAvailableJobs) {
+
+        // ── Local pre-computation ─────────────────────────────────────────────
+        boolean overloaded        = applyWorkloadPenalty && currentWorkload > 80;
+        int effectiveOpenings     = openings > 0 ? openings : 1;
+        boolean highlyCompetitive = applicantCount > effectiveOpenings * 2;
+
         String cvSection = hasPdf
             ? "## Candidate CV\nThe candidate's full CV is provided as a PDF document above.\n"
               + "Additional context:\n" + cvContent
             : "## Candidate CV / Cover Letter\n" + cvContent;
 
-        return "You are an expert academic recruiter evaluating a Teaching Assistant candidate.\n\n"
-            + "## Job Requirements\n"
-            + jobRequirements + "\n\n"
+        boolean hasOtherJobs = otherAvailableJobs != null && !otherAvailableJobs.isBlank();
+        String otherJobsSection = hasOtherJobs
+            ? "## Other Open Positions in the Same Course\n" + otherAvailableJobs
+            : "## Other Open Positions in the Same Course\nNone provided.";
+
+        // ── Workload warning (MO side only, injected when overloaded) ─────────
+        String workloadWarning = overloaded
+            ? "\n## 注意 — 工作量严重超标\n"
+              + "该候选人目前已承担 " + currentWorkload + " 小时的TA工作量，"
+              + "已严重超出合理上限（80小时），这将显著影响其工作状态与质量。\n"
+              + "请在评分时适度扣分（扣除10–20分），并在aiReasoning中注明原因，例如：\n"
+              + "  \"该候选人当前工作量（" + currentWorkload + " h）已超出80小时上限，扣除Y分。\"\n"
+            : "";
+
+        // ── Alternative job instruction (TA side only) ────────────────────────
+        String altJobInstruction = (!applyWorkloadPenalty && highlyCompetitive && hasOtherJobs)
+            ? "## Step 3 — Recommend an alternative job\n"
+              + "This position is highly competitive. Review the 'Other Open Positions' list above.\n"
+              + "If any position is a better or equally good fit for this candidate's skills "
+              + "AND still has remaining capacity (accepted < openings), set "
+              + "aiRecommendedAlternativeJob to that position's title. "
+              + "Otherwise set aiRecommendedAlternativeJob to \"\".\n\n"
+            : "## Step 3 — Recommended alternative job\n"
+              + "Set aiRecommendedAlternativeJob to \"\".\n\n";
+
+        return "You are an expert academic recruiter evaluating a Teaching Assistant (TA) candidate.\n\n"
+            + "## Target Job Information\n"
+            + currentJobInfo + "\n\n"
             + cvSection + "\n\n"
-            + "## Task\n"
-            + "Analyse how well this candidate matches the job requirements.\n"
-            + "Return ONLY a single JSON object with EXACTLY these four keys:\n\n"
-            + "{\n"
-            + "  \"aiMatchScore\": <integer 0-100>,\n"
-            + "  \"aiMatchedSkills\": \"<comma-separated skills present in both CV and requirements>\",\n"
-            + "  \"aiMissingSkills\": \"<comma-separated skills required but absent from CV, or \\\"None\\\" if all matched>\",\n"
-            + "  \"aiReasoning\": \"<2-3 sentence explanation of the score>\"\n"
-            + "}\n\n"
-            + "Scoring guide:\n"
+            + workloadWarning
+            + otherJobsSection + "\n\n"
+
+            + "## Step 1 — Compute a base match score (0–100)\n"
+            + "Evaluate purely on skills, experience, and requirements:\n"
             + "  90-100 = outstanding fit, almost all required skills present\n"
             + "  70-89  = good fit, minor gaps\n"
             + "  50-69  = partial fit, notable gaps\n"
             + "  0-49   = poor fit, significant required skills missing\n\n"
-            + "Do NOT include any markdown, code fences, or extra fields. "
-            + "Output the raw JSON object only.";
+
+            + "## Step 2 — Apply workload deduction (if instructed above)\n"
+            + (overloaded
+                ? "A workload warning was issued above. Apply the deduction and reflect it in aiMatchScore.\n\n"
+                : "No workload deduction needed. Use the base score.\n\n")
+
+            + altJobInstruction
+
+            + "## Output\n"
+            + "Return ONLY a single flat JSON object with EXACTLY these five keys "
+            + "(no markdown, no code fences, no extra fields):\n\n"
+            + "{\n"
+            + "  \"aiMatchScore\": <integer 0-100, after any workload deduction>,\n"
+            + "  \"aiMatchedSkills\": \"<comma-separated skills present in both CV and requirements>\",\n"
+            + "  \"aiMissingSkills\": \"<comma-separated required skills absent from CV, or \\\"None\\\">\",\n"
+            + "  \"aiReasoning\": \"<2-4 sentences: score justification; mention workload deduction if applied>\",\n"
+            + "  \"aiRecommendedAlternativeJob\": \"<title of recommended alternative position, or empty string>\"\n"
+            + "}";
     }
 
     // ---------------------------------------------------------------
     // PARSE GEMINI RESPONSE
     // ---------------------------------------------------------------
 
-    /**
-     * Navigates the Gemini response envelope:
-     *   candidates[0].content.parts[0].text
-     * and returns the inner text string (which should already be JSON
-     * thanks to responseMimeType).
-     */
     private String extractTextFromResponse(String responseBody) {
         JsonObject root = gson.fromJson(responseBody, JsonObject.class);
 
@@ -211,18 +252,22 @@ public class GeminiService {
             throw new RuntimeException("No parts in Gemini response content");
         }
 
-        JsonElement textElement = parts.get(0).getAsJsonObject().get("text");
-        if (textElement == null) {
-            throw new RuntimeException("No text field in Gemini response part");
+        // gemini-2.5-flash returns thinking parts first (thought:true); skip them
+        for (JsonElement partEl : parts) {
+            JsonObject part = partEl.getAsJsonObject();
+            JsonElement thoughtEl = part.get("thought");
+            if (thoughtEl != null && !thoughtEl.isJsonNull() && thoughtEl.getAsBoolean()) {
+                continue;
+            }
+            JsonElement textEl = part.get("text");
+            if (textEl != null && !textEl.isJsonNull()) {
+                return textEl.getAsString().trim();
+            }
         }
 
-        return textElement.getAsString().trim();
+        throw new RuntimeException("No non-thought text part found in Gemini response");
     }
 
-    /**
-     * Deserialises the inner JSON string returned by Gemini into the
-     * four AI fields on the Application object.
-     */
     private void populateApplication(Application app, String json) {
         JsonObject result = gson.fromJson(json, JsonObject.class);
 
@@ -245,21 +290,23 @@ public class GeminiService {
         if (reasoningEl != null && !reasoningEl.isJsonNull()) {
             app.setAiReasoning(reasoningEl.getAsString());
         }
+
+        // Safe handling: field may be absent, null, or an explicit empty string
+        JsonElement altJobEl = result.get("aiRecommendedAlternativeJob");
+        if (altJobEl != null && !altJobEl.isJsonNull()) {
+            app.setAiRecommendedAlternativeJob(altJobEl.getAsString());
+        } else {
+            app.setAiRecommendedAlternativeJob("");
+        }
     }
 
     // ---------------------------------------------------------------
     // UTILITIES
     // ---------------------------------------------------------------
 
-    /**
-     * Fixes common issues in Gemini-generated JSON:
-     * replaces literal newlines/tabs inside JSON string values with escape sequences.
-     */
     private String sanitizeJsonString(String json) {
         if (json == null) return "{}";
-        // Remove markdown code fences if present
         json = json.replaceAll("^```json\\s*", "").replaceAll("^```\\s*", "").replaceAll("```\\s*$", "").trim();
-        // Replace literal newlines/tabs inside string values
         StringBuilder sb = new StringBuilder();
         boolean inString = false;
         boolean escape = false;
@@ -287,7 +334,6 @@ public class GeminiService {
         return sb.toString();
     }
 
-    /** Escapes a string so it can be safely embedded in a JSON value. */
     private String escapeJson(String s) {
         if (s == null) return "";
         return s.replace("\\", "\\\\")
@@ -302,51 +348,73 @@ public class GeminiService {
     // ---------------------------------------------------------------
 
     /**
-     * Run this main method directly in your IDE to smoke-test the API
-     * integration before wiring it into the servlet layer.
+     * Extreme test case: candidate is already at 45 h workload (above 40 h threshold)
+     * AND the target position is completely full (3 accepted out of 3 needed), with a
+     * high applicant-to-accepted ratio.  Expect:
+     *   - workload penalty applied in aiMatchScore
+     *   - aiReasoning mentions overload
+     *   - aiRecommendedAlternativeJob points to a less-contested opening
      *
-     * Before running, either:
-     *   a) set the GEMINI_API_KEY environment variable in your run config, or
-     *   b) temporarily replace API_KEY constant above with your real key.
+     * Before running: set GEMINI_API_KEY env var, or replace the constant above.
      */
     public static void main(String[] args) {
-        // --- Mock job requirements (mirrors seed data in DataStore) ---
-        String jobRequirements =
+
+        String currentJobInfo =
                 "Position: Software Engineering Lab Assessment TA (EBU6304)\n"
                 + "Requirements:\n"
                 + "- Strong Java skills\n"
                 + "- Experience with Agile methods\n"
                 + "- Code review experience\n"
                 + "- Good communication skills\n"
+                + "Openings: 3\n"
                 + "Hours: 6 hours/week, Full Academic Year";
 
-        // --- Mock CV / cover letter ---
         String cvContent =
                 "Name: Alice Chen\n"
                 + "Education: BSc Computer Science, BUPT (GPA 3.8/4.0)\n"
                 + "Skills: Java, Python, Spring Boot, Git, Unit Testing\n"
                 + "Experience:\n"
-                + "  - 1-year internship at a software company, participated in Agile sprints,\n"
-                + "    daily stand-ups, and sprint retrospectives.\n"
+                + "  - 1-year internship; Agile sprints, daily stand-ups, sprint retrospectives.\n"
                 + "  - Conducted peer code reviews on 3 group projects.\n"
                 + "  - Tutored 5 junior students in Java fundamentals.\n"
                 + "Languages: Mandarin (native), English (fluent)\n"
-                + "Cover letter: I am enthusiastic about guiding students through lab sessions "
-                + "and believe my hands-on Agile and code-review background makes me a strong fit.";
+                + "Cover letter: I am enthusiastic about guiding students through lab sessions.";
 
-        System.out.println("=== GeminiService Local Test ===");
+        // Extreme mock values:
+        int currentWorkload = 45;   // 5 h over the 40 h threshold → penalty expected
+        int applicantCount  = 32;   // 32 applicants for 3 slots → very competitive
+        int acceptedCount   = 3;    // already full
+
+        String otherAvailableJobs =
+                "1. Data Structures & Algorithms TA (EBU5476)\n"
+                + "   Requirements: Python, algorithm analysis, graph theory\n"
+                + "   Accepted so far: 0 / Openings: 2\n\n"
+                + "2. Mobile App Development TA (EBU6402)\n"
+                + "   Requirements: Android/iOS, Kotlin or Swift, UI design\n"
+                + "   Accepted so far: 1 / Openings: 3\n\n"
+                + "3. Database Systems Lab TA (EBU5316)\n"
+                + "   Requirements: SQL, ER modelling, query optimisation\n"
+                + "   Accepted so far: 0 / Openings: 2";
+
+        System.out.println("=== GeminiService Local Test (Extreme Case) ===");
+        System.out.println("currentWorkload : " + currentWorkload + " h  (threshold = 40 h)");
+        System.out.println("applicantCount  : " + applicantCount);
+        System.out.println("acceptedCount   : " + acceptedCount + " / 3 openings (position FULL)");
         System.out.println("Sending request to Gemini API...\n");
 
         GeminiService service = new GeminiService();
 
         try {
-            Application result = service.analyzeMatch(cvContent, jobRequirements);
+            Application result = service.analyzeMatch(
+                    cvContent, currentJobInfo, null,
+                    currentWorkload, applicantCount, acceptedCount, 3, true, otherAvailableJobs);
 
             System.out.println("--- AI Analysis Result ---");
-            System.out.println("Score         : " + result.getAiMatchScore());
-            System.out.println("Matched Skills: " + result.getAiMatchedSkills());
-            System.out.println("Missing Skills: " + result.getAiMissingSkills());
-            System.out.println("Reasoning     : " + result.getAiReasoning());
+            System.out.println("Score                    : " + result.getAiMatchScore());
+            System.out.println("Matched Skills           : " + result.getAiMatchedSkills());
+            System.out.println("Missing Skills           : " + result.getAiMissingSkills());
+            System.out.println("Reasoning                : " + result.getAiReasoning());
+            System.out.println("Recommended Alternative  : " + result.getAiRecommendedAlternativeJob());
 
         } catch (Exception e) {
             System.err.println("ERROR: " + e.getMessage());

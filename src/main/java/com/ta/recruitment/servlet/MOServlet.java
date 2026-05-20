@@ -82,6 +82,8 @@ public class MOServlet extends BaseServlet {
             req.setAttribute("pendingCount",    pending);
             req.setAttribute("acceptedCount",   accepted);
             req.setAttribute("rejectedCount",   rejected);
+            req.setAttribute("openings",        job.getOpenings());
+            req.setAttribute("isFull",          accepted >= job.getOpenings());
             req.setAttribute("isOwner",         userId.equals(job.getPostedBy()));
             req.getRequestDispatcher("/WEB-INF/jsp/mo/course-detail.jsp").forward(req, resp);
 
@@ -135,6 +137,10 @@ public class MOServlet extends BaseServlet {
             job.setPositionType(req.getParameter("positionType"));
             job.setHours(req.getParameter("hours"));
             job.setDuration(req.getParameter("duration"));
+            String openingsParam = req.getParameter("openings");
+            if (openingsParam != null && !openingsParam.trim().isEmpty()) {
+                try { job.setOpenings(Integer.parseInt(openingsParam.trim())); } catch (NumberFormatException ignored) {}
+            }
             job.setPostedBy(userId);
             job.setPostedByName(moUser != null ? moUser.getName() : "");
             String reqsParam = req.getParameter("requirements");
@@ -203,7 +209,7 @@ public class MOServlet extends BaseServlet {
             }
             User ta = ds.findUserById(app.getTaId());
 
-            // 2. 组装 CV 文本（name/dept/cover letter 作为补充上下文）
+            // 2. 组装 CV 文本上下文
             StringBuilder cvBuilder = new StringBuilder();
             if (ta != null) {
                 cvBuilder.append("Name: ").append(ta.getName()).append("\n");
@@ -213,9 +219,8 @@ public class MOServlet extends BaseServlet {
                     cvBuilder.append("Phone: ").append(ta.getPhone()).append("\n");
             }
             String cover = app.getCoverLetter();
-            if (cover != null && !cover.trim().isEmpty()) {
+            if (cover != null && !cover.trim().isEmpty())
                 cvBuilder.append("Cover Letter:\n").append(cover.trim()).append("\n");
-            }
 
             // 3. 读取 CV 文件（优先用申请附件，其次用 TA 账户简历）
             byte[] cvPdfBytes = null;
@@ -269,30 +274,72 @@ public class MOServlet extends BaseServlet {
                     reqBuilder.append("- ").append(r).append("\n");
                 }
             }
+            reqBuilder.append("Openings (total positions needed): ").append(job.getOpenings()).append("\n");
 
-            // 4. 调用 Gemini（传入 PDF bytes，无简历时降级为纯文本分析）
+            // 4. 收集 Gemini 新增参数
+            // ── 该 TA 当前已录用总工时（直接从 user 读取，由状态变更时自动维护）
+            int currentWorkload = ta != null ? ta.getWorkload() : 0;
+            // ── 当前岗位报名人数 / 已录取人数
+            List<Application> jobApps = ds.getApplicationsByJob(app.getJobId());
+            int applicantCount = jobApps.size();
+            int acceptedCount  = 0;
+            for (Application a2 : jobApps) {
+                if ("accepted".equals(a2.getStatus())) acceptedCount++;
+            }
+            // ── 同课程其他活跃岗位列表
+            StringBuilder otherJobsSb = new StringBuilder();
+            for (Job j2 : ds.getAllJobs()) {
+                if (!j2.getJobId().equals(job.getJobId())
+                        && job.getCourseCode() != null
+                        && job.getCourseCode().equals(j2.getCourseCode())
+                        && "active".equals(j2.getStatus())) {
+                    List<Application> j2Apps = ds.getApplicationsByJob(j2.getJobId());
+                    int j2Accepted = 0;
+                    for (Application a2 : j2Apps) {
+                        if ("accepted".equals(a2.getStatus())) j2Accepted++;
+                    }
+                    otherJobsSb.append("- ").append(j2.getTitle())
+                               .append(" (").append(j2.getPositionType()).append(")")
+                               .append(", openings: ").append(j2.getOpenings())
+                               .append(", accepted: ").append(j2Accepted)
+                               .append(", applicants: ").append(j2Apps.size());
+                    if (j2.getRequirements() != null && !j2.getRequirements().isEmpty()) {
+                        otherJobsSb.append(", requirements: ")
+                                   .append(String.join(", ", j2.getRequirements()));
+                    }
+                    otherJobsSb.append("\n");
+                }
+            }
+
+            // 5. 调用 Gemini（传入所有参数）
             GeminiService gemini = new GeminiService();
             try {
-                Application aiResult = gemini.analyzeMatch(cvBuilder.toString(), reqBuilder.toString(), cvPdfBytes);
+                Application aiResult = gemini.analyzeMatch(
+                        cvBuilder.toString(), reqBuilder.toString(), cvPdfBytes,
+                        currentWorkload, applicantCount, acceptedCount, job.getOpenings(), true, otherJobsSb.toString());
 
-                // 5. 持久化 AI 结果
+                // 6. 持久化 AI 结果（含新字段）
                 ds.updateApplicationAiResult(
                     appId,
-                    aiResult.getAiMatchScore()     != null ? aiResult.getAiMatchScore() : 0,
-                    aiResult.getAiMatchedSkills()  != null ? aiResult.getAiMatchedSkills()  : "",
-                    aiResult.getAiMissingSkills()  != null ? aiResult.getAiMissingSkills()  : "",
-                    aiResult.getAiReasoning()      != null ? aiResult.getAiReasoning()      : ""
+                    aiResult.getAiMatchScore()                != null ? aiResult.getAiMatchScore() : 0,
+                    aiResult.getAiMatchedSkills()             != null ? aiResult.getAiMatchedSkills()  : "",
+                    aiResult.getAiMissingSkills()             != null ? aiResult.getAiMissingSkills()  : "",
+                    aiResult.getAiReasoning()                 != null ? aiResult.getAiReasoning()      : "",
+                    aiResult.getAiRecommendedAlternativeJob() != null ? aiResult.getAiRecommendedAlternativeJob() : ""
                 );
 
-                // 6. 将结果以 JSON 返回前端
+                // 7. 将结果以 JSON 返回前端
                 String score   = String.valueOf(aiResult.getAiMatchScore() != null ? aiResult.getAiMatchScore() : 0);
                 String matched = jsonEsc(aiResult.getAiMatchedSkills());
                 String missing = jsonEsc(aiResult.getAiMissingSkills());
                 String reason  = jsonEsc(aiResult.getAiReasoning());
+                String altJob  = jsonEsc(aiResult.getAiRecommendedAlternativeJob());
                 out.write("{\"aiMatchScore\":" + score
                     + ",\"aiMatchedSkills\":\"" + matched + "\""
                     + ",\"aiMissingSkills\":\"" + missing + "\""
-                    + ",\"aiReasoning\":\"" + reason + "\"}");
+                    + ",\"aiReasoning\":\"" + reason + "\""
+                    + ",\"aiRecommendedAlternativeJob\":\"" + altJob + "\""
+                    + ",\"cached\":false}");
             } catch (Exception e) {
                 resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
                 out.write("{\"error\":\"" + jsonEsc(e.getMessage()) + "\"}");
