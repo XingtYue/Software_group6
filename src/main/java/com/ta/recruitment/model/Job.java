@@ -19,6 +19,7 @@ public class Job {
     private List<String> requirements;
     private String courseName;    // 课程名称（如：软件工程EBU6304），同一课程名称对应同一个MO
     private String positionType;  // 岗位类型（如：批改作业、监考、验收lab、验收大作业）
+    private int openings = 1;     // 需要招募的 TA 人数，默认 1
 
     public Job() {
         this.requirements = new ArrayList<>();
@@ -80,6 +81,9 @@ public class Job {
         this.positionType = positionType;
     }
 
+    public int getOpenings() { return openings; }
+    public void setOpenings(int openings) { this.openings = Math.max(1, openings); }
+
     public java.util.Map<String,String> toMap() {
         java.util.Map<String,String> m = new java.util.LinkedHashMap<>();
         m.put("id", id);
@@ -95,6 +99,7 @@ public class Job {
         m.put("postedBy", postedByName != null ? postedByName : "");
         m.put("status", status != null ? status : "active");
         m.put("postedDate", postedDate != null ? postedDate : "");
+        m.put("openings", String.valueOf(openings));
         return m;
     }
 }

@@ -106,6 +106,11 @@
 
           <div style="display:flex;gap:16px;align-items:flex-start;">
             <div class="form-group" style="width:140px;flex-shrink:0;">
+              <label class="form-label" for="openings">Openings <span style="color:#b91c1c;">*</span></label>
+              <input class="form-input" id="openings" name="openings" type="number" min="1" max="50"
+                     placeholder="e.g. 3" required style="text-align:center;" value="1">
+            </div>
+            <div class="form-group" style="width:140px;flex-shrink:0;">
               <label class="form-label" for="hours">Hrs/Week <span style="color:#b91c1c;">*</span></label>
               <input class="form-input" id="hours" name="hours" type="number" min="1" max="40"
                      placeholder="e.g. 10" required style="text-align:center;">

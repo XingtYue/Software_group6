@@ -339,13 +339,15 @@ public class DataStore {
         }
     }
 
-    public void updateApplicationAiResult(String appId, int score, String matched, String missing, String reasoning) {
+    public void updateApplicationAiResult(String appId, int score, String matched, String missing,
+                                          String reasoning, String altJob) {
         Application a = findApplicationById(appId);
         if (a != null) {
             a.setAiMatchScore(score);
             a.setAiMatchedSkills(matched);
             a.setAiMissingSkills(missing);
             a.setAiReasoning(reasoning);
+            a.setAiRecommendedAlternativeJob(altJob != null ? altJob : "");
             saveApplications();
         }
     }
@@ -387,6 +389,63 @@ public class DataStore {
         }
 
         return result;
+    }
+
+    /** Calculates total workload for a TA: sum of (hours/week × weeks) across all accepted applications. */
+    public int calculateTaWorkload(String taId) {
+        int total = 0;
+        for (Application a : applications) {
+            if (taId.equals(a.getTaId()) && "accepted".equals(a.getStatus())) {
+                Job j = findJobByJobId(a.getJobId());
+                if (j != null && j.getHours() != null) {
+                    try {
+                        String h = j.getHours().replaceAll("[^0-9]", "");
+                        if (!h.isEmpty()) {
+                            total += Integer.parseInt(h) * parseDurationWeekCount(j.getDuration());
+                        }
+                    } catch (Exception ignored) {}
+                }
+            }
+        }
+        return total;
+    }
+
+    /** Calculates total workload for a TA: sum of (hours/week × weeks) across all accepted applications. */
+    public int calculateTaWorkload(String taId) {
+        int total = 0;
+        for (Application a : applications) {
+            if (taId.equals(a.getTaId()) && "accepted".equals(a.getStatus())) {
+                Job j = findJobByJobId(a.getJobId());
+                if (j != null && j.getHours() != null) {
+                    try {
+                        String h = j.getHours().replaceAll("[^0-9]", "");
+                        if (!h.isEmpty()) {
+                            total += Integer.parseInt(h) * parseDurationWeekCount(j.getDuration());
+                        }
+                    } catch (Exception ignored) {}
+                }
+            }
+        }
+        return total;
+    }
+
+    /** Calculates total workload for a TA: sum of (hours/week × weeks) across all accepted applications. */
+    public int calculateTaWorkload(String taId) {
+        int total = 0;
+        for (Application a : applications) {
+            if (taId.equals(a.getTaId()) && "accepted".equals(a.getStatus())) {
+                Job j = findJobByJobId(a.getJobId());
+                if (j != null && j.getHours() != null) {
+                    try {
+                        String h = j.getHours().replaceAll("[^0-9]", "");
+                        if (!h.isEmpty()) {
+                            total += Integer.parseInt(h) * parseDurationWeekCount(j.getDuration());
+                        }
+                    } catch (Exception ignored) {}
+                }
+            }
+        }
+        return total;
     }
 
     private int countAcceptedPositions(String taId) {
@@ -582,6 +641,7 @@ public class DataStore {
             sb.append("\"postedByName\":\"").append(esc(j.getPostedByName() != null ? j.getPostedByName() : "")).append("\",");
             sb.append("\"status\":\"").append(esc(j.getStatus() != null ? j.getStatus() : "active")).append("\",");
             sb.append("\"postedDate\":\"").append(esc(j.getPostedDate() != null ? j.getPostedDate() : "")).append("\",");
+            sb.append("\"openings\":\"").append(j.getOpenings()).append("\",");
             sb.append("\"requirements\":[");
             List<String> reqs = j.getRequirements();
             if (reqs != null) {
@@ -619,7 +679,8 @@ public class DataStore {
             sb.append("\"aiMatchScore\":\"").append(esc(a.getAiMatchScore() != null ? String.valueOf(a.getAiMatchScore()) : "")).append("\",");
             sb.append("\"aiMatchedSkills\":\"").append(esc(a.getAiMatchedSkills() != null ? a.getAiMatchedSkills() : "")).append("\",");
             sb.append("\"aiMissingSkills\":\"").append(esc(a.getAiMissingSkills() != null ? a.getAiMissingSkills() : "")).append("\",");
-            sb.append("\"aiReasoning\":\"").append(esc(a.getAiReasoning() != null ? a.getAiReasoning() : "")).append("\"");
+            sb.append("\"aiReasoning\":\"").append(esc(a.getAiReasoning() != null ? a.getAiReasoning() : "")).append("\",");
+            sb.append("\"aiRecommendedAlternativeJob\":\"").append(esc(a.getAiRecommendedAlternativeJob() != null ? a.getAiRecommendedAlternativeJob() : "")).append("\"");
             sb.append("}");
             if (i < applications.size() - 1) sb.append(",");
             sb.append("\n");
@@ -676,6 +737,10 @@ public class DataStore {
             j.setPostedByName(r.get("postedByName"));
             j.setStatus(r.getOrDefault("status","active"));
             j.setPostedDate(r.get("postedDate"));
+            String openingsStr = r.get("openings");
+            if (openingsStr != null && !openingsStr.isEmpty()) {
+                try { j.setOpenings(Integer.parseInt(openingsStr)); } catch (NumberFormatException ignored) {}
+            }
             list.add(j);
         }
         return list;
@@ -706,6 +771,7 @@ public class DataStore {
             a.setAiMatchedSkills(r.get("aiMatchedSkills"));
             a.setAiMissingSkills(r.get("aiMissingSkills"));
             a.setAiReasoning(r.get("aiReasoning"));
+            a.setAiRecommendedAlternativeJob(r.getOrDefault("aiRecommendedAlternativeJob", ""));
             list.add(a);
         }
         return list;
