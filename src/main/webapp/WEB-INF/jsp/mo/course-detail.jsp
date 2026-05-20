@@ -131,16 +131,31 @@
             <p class="text-gray-600">Code: ${courseCode != null ? courseCode : ''}</p>
 
             <%
+              String courseId = (String) request.getAttribute("courseId");
+              if (courseId == null) courseId = "1";
+              Boolean isOwner = (Boolean) request.getAttribute("isOwner");
+              if (isOwner == null) isOwner = false;
               java.util.Map<String,String> job = (java.util.Map<String,String>) request.getAttribute("job");
               if (job != null) {
             %>
             <div style="margin-top:20px;padding:16px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
                 <h3 style="font-size:15px;font-weight:600;color:#374151;margin:0;">Job Details</h3>
-                <button id="toggleJobDetails" onclick="toggleJobDetails()"
-                        style="background:none;border:1px solid #d1d5db;border-radius:6px;padding:4px 12px;cursor:pointer;font-size:13px;color:#6b7280;transition:all 0.2s;">
-                  <span id="toggleIcon">▼</span> <span id="toggleText">Collapse</span>
-                </button>
+                <div style="display:flex;gap:8px;">
+                  <% if (isOwner) { %>
+                  <form action="${pageContext.request.contextPath}/mo/delete-job" method="post" style="display:inline;">
+                    <input type="hidden" name="jobId" value="<%= courseId %>">
+                    <button type="submit" class="btn btn-outline-red btn-sm"
+                            onclick="return confirm('Are you sure you want to delete this job? All applications will also be deleted. This action cannot be undone.')">
+                      Delete Job
+                    </button>
+                  </form>
+                  <% } %>
+                  <button id="toggleJobDetails" onclick="toggleJobDetails()"
+                          style="background:none;border:1px solid #d1d5db;border-radius:6px;padding:4px 12px;cursor:pointer;font-size:13px;color:#6b7280;transition:all 0.2s;">
+                    <span id="toggleIcon">▼</span> <span id="toggleText">Collapse</span>
+                  </button>
+                </div>
               </div>
               <div id="jobDetailsContent" style="display:block;">
                 <div style="display:grid;grid-template-columns:120px 1fr;gap:8px;font-size:14px;">
@@ -181,13 +196,9 @@
               List<Map<String,String>> pendingApplicants  = (List<Map<String,String>>) request.getAttribute("pendingApplicants");
               List<Map<String,String>> acceptedApplicants = (List<Map<String,String>>) request.getAttribute("acceptedApplicants");
               List<Map<String,String>> rejectedApplicants = (List<Map<String,String>>) request.getAttribute("rejectedApplicants");
-              String courseId = (String) request.getAttribute("courseId");
-              if (courseId == null) courseId = "1";
               if (pendingApplicants  == null) pendingApplicants  = new ArrayList<Map<String,String>>();
               if (acceptedApplicants == null) acceptedApplicants = new ArrayList<Map<String,String>>();
               if (rejectedApplicants == null) rejectedApplicants = new ArrayList<Map<String,String>>();
-              Boolean isOwner = (Boolean) request.getAttribute("isOwner");
-              if (isOwner == null) isOwner = false;
             %>
 
             <!-- ===== PENDING SECTION ===== -->
