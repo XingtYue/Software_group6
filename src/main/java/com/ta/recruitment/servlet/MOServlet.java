@@ -166,6 +166,20 @@ public class MOServlet extends BaseServlet {
             String redirect = jobId != null ? "/mo/courses/" + jobId : "/mo/applicants";
             resp.sendRedirect(req.getContextPath() + redirect);
 
+        } else if (path.equals("/delete-job") || path.equals("/delete-job/")) {
+            String jobId = req.getParameter("jobId");
+            if (jobId != null && !jobId.trim().isEmpty()) {
+                Job job = ds.findJobByJobId(jobId);
+                if (job != null && userId.equals(job.getPostedBy())) {
+                    ds.deleteJob(jobId);
+                    ds.getAllApplications().removeIf(app -> app.getJobId().equals(jobId));
+                    ds.saveApplications();
+                    resp.sendRedirect(req.getContextPath() + "/mo/applicants?success=deleted");
+                    return;
+                }
+            }
+            resp.sendRedirect(req.getContextPath() + "/mo/applicants?error=delete");
+
         } else if (path.equals("/profile") || path.equals("/profile/")) {
             handleProfilePost(req, resp, ds, userId, "/WEB-INF/jsp/mo/profile.jsp");
 

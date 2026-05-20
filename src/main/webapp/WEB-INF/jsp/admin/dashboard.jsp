@@ -61,6 +61,7 @@
                 <button class="btn btn-outline btn-sm" id="role-ta" onclick="setRoleFilter('ta')">TA</button>
                 <button class="btn btn-outline btn-sm" id="role-mo" onclick="setRoleFilter('mo')">MO</button>
                 <button class="btn btn-outline btn-sm" id="role-admin" onclick="setRoleFilter('admin')">Admin</button>
+                <a href="${pageContext.request.contextPath}/admin/add-mo" class="btn btn-primary btn-sm" style="margin-left: 12px;">+ Add New MO</a>
               </div>
               <div id="status-filter-row">
                 <button class="btn btn-primary btn-sm" id="status-all" onclick="setStatusFilter('all')">All</button>

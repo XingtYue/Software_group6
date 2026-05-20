@@ -168,6 +168,9 @@ public class AdminServlet extends BaseServlet {
             if (user != null) req.setAttribute("user", user.toMap());
             forward(req, resp, "/WEB-INF/jsp/admin/profile.jsp");
 
+        } else if (path.equals("/add-mo") || path.equals("/add-mo/")) {
+            forward(req, resp, "/WEB-INF/jsp/admin/add-mo.jsp");
+
         } else if (path.matches("/users/[^/]+/edit")) {
             String uid = path.substring("/users/".length(), path.lastIndexOf("/edit"));
             User u = ds.findUserById(uid);
@@ -254,6 +257,42 @@ public class AdminServlet extends BaseServlet {
             User user = ds.findUserById(userId);
             if (user != null) req.setAttribute("user", user.toMap());
             forward(req, resp, "/WEB-INF/jsp/admin/profile.jsp");
+
+        } else if (path.equals("/add-mo") || path.equals("/add-mo/")) {
+            String username = req.getParameter("username");
+            String password = req.getParameter("password");
+            String fullName = req.getParameter("fullName");
+            String email = req.getParameter("email");
+            String phone = req.getParameter("phone");
+            String department = req.getParameter("department");
+
+            if (username == null || username.trim().isEmpty() ||
+                password == null || password.trim().isEmpty() ||
+                fullName == null || fullName.trim().isEmpty() ||
+                email == null || email.trim().isEmpty()) {
+                resp.sendRedirect(req.getContextPath() + "/admin/add-mo?error=missing");
+                return;
+            }
+
+            for (User u : ds.getAllUsers()) {
+                if (username.trim().equalsIgnoreCase(u.getId())) {
+                    resp.sendRedirect(req.getContextPath() + "/admin/add-mo?error=duplicate");
+                    return;
+                }
+            }
+
+            User newMO = new User(username.trim(), fullName.trim(), email.trim(), password.trim(), "mo");
+            newMO.setStatus("active");
+
+            if (phone != null && !phone.trim().isEmpty()) {
+                newMO.setPhone(phone.trim());
+            }
+            if (department != null && !department.trim().isEmpty()) {
+                newMO.setDepartment(department.trim());
+            }
+
+            ds.addUser(newMO);
+            resp.sendRedirect(req.getContextPath() + "/admin?success=mo");
 
         } else if (path.matches("/users/[^/]+/edit")) {
             String uid = path.substring("/users/".length(), path.lastIndexOf("/edit"));
