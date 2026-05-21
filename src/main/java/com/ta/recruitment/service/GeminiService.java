@@ -148,7 +148,7 @@ public class GeminiService {
             + "\"generationConfig\":{"
             +   "\"responseMimeType\":\"application/json\","
             +   "\"temperature\":0.2,"
-            +   "\"maxOutputTokens\":2048"
+            +   "\"maxOutputTokens\":4096"
             + "}"
             + "}";
     }
@@ -321,17 +321,22 @@ public class GeminiService {
             } else if (c == '"') {
                 sb.append(c);
                 inString = !inString;
-            } else if (inString && c == '\n') {
-                sb.append("\\n");
-            } else if (inString && c == '\r') {
-                sb.append("\\r");
-            } else if (inString && c == '\t') {
-                sb.append("\\t");
+            } else if (inString && c < 0x20) {
+                switch (c) {
+                    case '\n': sb.append("\\n"); break;
+                    case '\r': sb.append("\\r"); break;
+                    case '\t': sb.append("\\t"); break;
+                    default: break; // drop other control chars
+                }
             } else {
                 sb.append(c);
             }
         }
-        return sb.toString();
+        // Recovery: handles truncated responses (unclosed string or object)
+        if (inString) sb.append('"');
+        String s = sb.toString().trim();
+        if (s.startsWith("{") && !s.endsWith("}")) s = s + "}";
+        return s;
     }
 
     private String escapeJson(String s) {

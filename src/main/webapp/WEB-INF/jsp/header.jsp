@@ -61,7 +61,7 @@
 <div class="top-bar">
   <div class="top-bar-left">
     <img src="${pageContext.request.contextPath}/images/logo.png" class="school-logo" alt="School Logo">
-    <span class="top-bar-title">${param.portalTitle}</span>
+    <span class="top-bar-title">Hi，${sessionScope.userName}</span>
   </div>
   <div class="header-right">
     <a href="${pageContext.request.contextPath}${param.profileUrl}" class="btn-icon" title="Profile">
