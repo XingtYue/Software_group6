@@ -68,7 +68,9 @@
           </div>
 
           <div class="flex gap-4 pt-4" style="border-top:1px solid #e2e8f0;margin-top:8px;">
-            <button type="submit" class="btn btn-primary">Submit Application</button>
+            <button type="submit" id="submitBtn" class="btn btn-primary"
+              <%= !hasCv ? "disabled" : "" %>
+              title="<%= !hasCv ? "Please upload a CV before submitting" : "" %>">Submit Application</button>
             <a href="${pageContext.request.contextPath}/ta/jobs/<%= jobId %>"
                class="btn btn-outline">Cancel</a>
           </div>
@@ -77,5 +79,23 @@
     </div>
   </main>
 </div>
+<script>
+(function () {
+  var hasCv = <%= hasCv %>;
+  var btn = document.getElementById('submitBtn');
+  var fileInput = document.querySelector('input[name="cv"]');
+  if (!fileInput) return;
+
+  function updateBtn() {
+    var hasFile = fileInput.files && fileInput.files.length > 0;
+    var enabled = hasCv || hasFile;
+    btn.disabled = !enabled;
+    btn.title = enabled ? '' : 'Please upload a CV before submitting';
+  }
+
+  fileInput.addEventListener('change', updateBtn);
+  updateBtn();
+})();
+</script>
 </body>
 </html>
