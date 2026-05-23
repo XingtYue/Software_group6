@@ -245,6 +245,22 @@ public class DataStore {
         }
     }
 
+    public void updateJobOpenings(String jobId, int openings) {
+        Job j = findJobByJobId(jobId);
+        if (j != null) {
+            j.setOpenings(openings);
+            saveJobs();
+        }
+    }
+
+    public void deactivateJob(String jobId) {
+        Job j = findJobByJobId(jobId);
+        if (j != null) {
+            j.setStatus("deactive");
+            saveJobs();
+        }
+    }
+
     public synchronized void deleteJob(String jobId) {
         jobs.removeIf(j -> j.getJobId().equals(jobId));
         saveJobs();
@@ -360,7 +376,7 @@ public class DataStore {
 
     // ==================== WORKLOAD ====================
 
-    /** Recalculates workload for one TA and persists it to users.json. */
+    /** Recalculates workload for one TA from accepted applications and persists to users.json. */
     private void recalcAndSaveWorkload(String taId) {
         User ta = findUserById(taId);
         if (ta == null) return;
@@ -384,11 +400,8 @@ public class DataStore {
     public List<Map<String,String>> getWorkloadData() {
         List<Map<String,String>> result = new ArrayList<>();
         List<User> allTAs = getUsersByRole("ta");
-
         for (User ta : allTAs) {
-            // Recalc to keep display in sync
-            recalcAndSaveWorkload(ta.getId());
-
+            // Read directly from in-memory state (already loaded from JSON). No recalc here.
             Map<String,String> wl = new HashMap<>();
             wl.put("id",         ta.getId());
             wl.put("name",       ta.getName());
@@ -397,7 +410,6 @@ public class DataStore {
             wl.put("positions",  String.valueOf(getAcceptedApplicationsByTA(ta.getId()).size()));
             result.add(wl);
         }
-
         return result;
     }
     private int countAcceptedPositions(String taId) {

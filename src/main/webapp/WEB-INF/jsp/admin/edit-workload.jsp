@@ -100,25 +100,26 @@
                         <div class="empty-state">This TA has no job applications.</div>
                         <% } %>
 
-                        <!-- ========== 新增：手动调整工时表单 ========== -->
+                        <!-- ========== 手动调整工时表单 ========== -->
                         <div class="card" style="margin-top:24px;padding:24px;">
                             <h3 class="text-xl mb-4">Manual Workload Adjustment</h3>
-                            <p class="text-gray-600 mb-4">If the TA has additional responsibilities not listed above, you can manually override their total weekly workload. Manual values will always take precedence over auto-calculated values.</p>
+                            <%
+                                User ta = (User) request.getAttribute("ta");
+                                int currentWorkload = ta.getWorkload();
+                            %>
+                            <p class="text-gray-600 mb-4">
+                                Auto-calculated from accepted positions. You can override the total here —
+                                any new accepted application will increment from this saved value.
+                            </p>
 
                             <form method="post" action="${pageContext.request.contextPath}/admin/workload/save">
                                 <input type="hidden" name="taId" value="${ta.id}">
-
                                 <div style="display:flex;align-items:center;gap:16px;">
                                     <div style="flex:1;">
                                         <label for="hours" class="block mb-2 font-medium">Total Hours (h/week × weeks)</label>
-                                        <%
-                                            User ta = (User) request.getAttribute("ta");
-                                            int currentWorkload = ta.getWorkload();
-                                        %>
                                         <input type="number" id="hours" name="hours" min="0"
                                                value="<%= currentWorkload %>"
                                                class="form-input" style="width:100%;">
-                                        <p class="text-xs text-gray-500 mt-1">Auto-calculated from accepted positions. Enter 0 to reset.</p>
                                     </div>
                                     <div style="align-self:flex-end;">
                                         <button type="submit" class="btn btn-primary">Save Workload</button>
@@ -130,7 +131,7 @@
                 </div>
             </div>
 
-            <!-- 右侧信息栏（已修复总工时显示） -->
+            <!-- 右侧信息栏 -->
             <div class="sidebar">
                 <p class="sidebar-title">TA SUMMARY</p>
                 <div class="stat-card">

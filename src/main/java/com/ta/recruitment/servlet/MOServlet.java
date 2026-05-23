@@ -26,20 +26,28 @@ public class MOServlet extends BaseServlet {
 
         if (path.equals("/applicants") || path.equals("/applicants/")) {
             // List all jobs with applicant counts, categorized by ownership
+            // MO sees: active (all), deactive (own only). Never sees closed.
             List<Job> allJobs = ds.getAllJobs();
             List<Map<String,String>> myJobMaps = new ArrayList<>();
             List<Map<String,String>> otherJobMaps = new ArrayList<>();
             int activeCourses = 0, pendingReviews = 0, acceptedTAs = 0;
 
             for (Job j : allJobs) {
+                String st = j.getStatus();
+                boolean isOwner = userId.equals(j.getPostedBy());
+                // closed → never show to MO
+                if ("closed".equals(st)) continue;
+                // deactive → only show to owner
+                if ("deactive".equals(st) && !isOwner) continue;
+
                 Map<String,String> m = new LinkedHashMap<>(j.toMap());
                 List<Application> jobApps = ds.getApplicationsByJob(j.getJobId());
                 m.put("applicantCount", String.valueOf(jobApps.size()));
-                if (userId.equals(j.getPostedBy())) {
+                if (isOwner) {
                     myJobMaps.add(m);
-                    if ("active".equals(j.getStatus())) activeCourses++;
+                    if ("active".equals(st)) activeCourses++;
                     for (Application a : jobApps) {
-                        if ("pending".equals(a.getStatus()))   pendingReviews++;
+                        if ("pending".equals(a.getStatus()))       pendingReviews++;
                         else if ("accepted".equals(a.getStatus())) acceptedTAs++;
                     }
                 } else {
@@ -59,6 +67,9 @@ public class MOServlet extends BaseServlet {
             String jobId = path.substring("/courses/".length());
             Job job = ds.findJobByJobId(jobId);
             if (job == null) { resp.sendError(404); return; }
+            // closed jobs: MO cannot access at all
+            if ("closed".equals(job.getStatus())) { resp.sendError(403); return; }
+            // deactive: only owner can access
 
             List<Application> apps = ds.getApplicationsByJob(jobId);
             List<Map<String,String>> pendingMaps = new ArrayList<>(),
@@ -172,19 +183,29 @@ public class MOServlet extends BaseServlet {
             String redirect = jobId != null ? "/mo/courses/" + jobId : "/mo/applicants";
             resp.sendRedirect(req.getContextPath() + redirect);
 
-        } else if (path.equals("/delete-job") || path.equals("/delete-job/")) {
+        } else if (path.equals("/reactivate-job") || path.equals("/reactivate-job/")) {
+            String jobId = req.getParameter("jobId");
+            if (jobId != null && !jobId.trim().isEmpty()) {
+                Job job = ds.findJobByJobId(jobId);
+                if (job != null && userId.equals(job.getPostedBy()) && "deactive".equals(job.getStatus())) {
+                    ds.openJob(jobId);  // sets status back to "active"
+                    resp.sendRedirect(req.getContextPath() + "/mo/courses/" + jobId + "?success=reactivated");
+                    return;
+                }
+            }
+            resp.sendRedirect(req.getContextPath() + "/mo/applicants?error=reactivate");
+
+        } else if (path.equals("/deactivate-job") || path.equals("/deactivate-job/")) {
             String jobId = req.getParameter("jobId");
             if (jobId != null && !jobId.trim().isEmpty()) {
                 Job job = ds.findJobByJobId(jobId);
                 if (job != null && userId.equals(job.getPostedBy())) {
-                    ds.deleteJob(jobId);
-                    ds.getAllApplications().removeIf(app -> app.getJobId().equals(jobId));
-                    ds.saveApplications();
-                    resp.sendRedirect(req.getContextPath() + "/mo/applicants?success=deleted");
+                    ds.deactivateJob(jobId);
+                    resp.sendRedirect(req.getContextPath() + "/mo/applicants?success=deactivated");
                     return;
                 }
             }
-            resp.sendRedirect(req.getContextPath() + "/mo/applicants?error=delete");
+            resp.sendRedirect(req.getContextPath() + "/mo/applicants?error=deactivate");
 
         } else if (path.equals("/profile") || path.equals("/profile/")) {
             handleProfilePost(req, resp, ds, userId, "/WEB-INF/jsp/mo/profile.jsp");

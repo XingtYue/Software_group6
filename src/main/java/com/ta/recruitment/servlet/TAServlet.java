@@ -52,7 +52,8 @@ public class TAServlet extends BaseServlet {
         } else if (path.startsWith("/jobs/")) {
             String jobId = path.substring("/jobs/".length());
             Job job = ds.findJobByJobId(jobId);
-            if (job == null) { resp.sendError(404); return; }
+            // TA cannot access deactive or closed jobs
+            if (job == null || !"active".equals(job.getStatus())) { resp.sendError(404); return; }
             List<Application> jobApps = ds.getApplicationsByJob(jobId);
             int acceptedCount = 0;
             for (Application a : jobApps) if ("accepted".equals(a.getStatus())) acceptedCount++;
@@ -70,7 +71,7 @@ public class TAServlet extends BaseServlet {
         } else if (path.startsWith("/apply/")) {
             String jobId = path.substring("/apply/".length());
             Job job = ds.findJobByJobId(jobId);
-            if (job == null) { resp.sendError(404); return; }
+            if (job == null || !"active".equals(job.getStatus())) { resp.sendError(404); return; }
             if (ds.hasApplied(userId, jobId)) { resp.sendRedirect(req.getContextPath() + "/ta/applications"); return; }
             User ta = ds.findUserById(userId);
             req.setAttribute("job",             job.toMap());
@@ -123,16 +124,12 @@ public class TAServlet extends BaseServlet {
                     app.put("aiReasoning",                 a.getAiReasoning()                 != null ? a.getAiReasoning()                 : "");
                     app.put("aiRecommendedAlternativeJob", a.getAiRecommendedAlternativeJob() != null ? a.getAiRecommendedAlternativeJob() : "");
 
-                    appMaps.add(app); // 把构建好的 Map 加进去
+                    appMaps.add(app);
 
-                    // 原来的状态统计代码不动
                     if ("accepted".equals(a.getStatus()))      accepted++;
                     else if ("rejected".equals(a.getStatus())) rejected++;
                     else                                       pending++;
                 }
-                if ("accepted".equals(a.getStatus()))      accepted++;
-                else if ("rejected".equals(a.getStatus())) rejected++;
-                else                                       pending++;
             }
             req.setAttribute("applications",  appMaps);
             req.setAttribute("pendingCount",  pending);

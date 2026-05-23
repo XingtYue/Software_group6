@@ -45,19 +45,22 @@ public class AdminServlet extends BaseServlet {
         } else if (path.equals("/jobs") || path.equals("/jobs/")) {
             List<Job> allJobs = ds.getAllJobs();
             List<Map<String,String>> jobMaps = new ArrayList<>();
-            int activeCount = 0, closedCount = 0, totalApplicants = 0;
+            int activeCount = 0, closedCount = 0, deactiveCount = 0, totalApplicants = 0;
             for (Job j : allJobs) {
                 Map<String,String> m = j.toMap();
                 int cnt = ds.getApplicationsByJob(j.getJobId()).size();
                 m.put("applicantCount", String.valueOf(cnt));
                 totalApplicants += cnt;
-                if ("active".equals(j.getStatus())) activeCount++; else closedCount++;
+                if ("active".equals(j.getStatus()))        activeCount++;
+                else if ("closed".equals(j.getStatus()))   closedCount++;
+                else if ("deactive".equals(j.getStatus())) deactiveCount++;
                 jobMaps.add(m);
             }
             req.setAttribute("jobs",            jobMaps);
             req.setAttribute("totalJobs",       allJobs.size());
             req.setAttribute("activeJobs",      activeCount);
             req.setAttribute("closedJobs",      closedCount);
+            req.setAttribute("deactiveJobs",    deactiveCount);
             req.setAttribute("totalApplicants", totalApplicants);
             forward(req, resp, "/WEB-INF/jsp/admin/job-management.jsp");
 
@@ -65,9 +68,16 @@ public class AdminServlet extends BaseServlet {
             String jobId = path.substring("/jobs/".length());
             Job job = ds.findJobByJobId(jobId);
             if (job == null) { resp.sendError(404); return; }
-            req.setAttribute("job",        job.toMap());
-            req.setAttribute("jobId",      jobId);
-            req.setAttribute("applicants", enrichedAppMaps(ds.getApplicationsByJob(jobId), ds));
+            List<Application> jobApps = ds.getApplicationsByJob(jobId);
+            int acceptedCnt = 0;
+            for (Application a : jobApps) if ("accepted".equals(a.getStatus())) acceptedCnt++;
+            req.setAttribute("job",            job.toMap());
+            req.setAttribute("jobId",          jobId);
+            req.setAttribute("applicants",     enrichedAppMaps(jobApps, ds));
+            req.setAttribute("openings",       job.getOpenings());
+            req.setAttribute("acceptedCount",  acceptedCnt);
+            req.setAttribute("applicantCount", jobApps.size());
+            req.setAttribute("isFull",         acceptedCnt >= job.getOpenings());
             forward(req, resp, "/WEB-INF/jsp/admin/job-detail.jsp");
 
         } else if (path.equals("/applications") || path.equals("/applications/")) {
@@ -197,6 +207,17 @@ public class AdminServlet extends BaseServlet {
             else if ("activate".equals(action) && jobId != null) ds.openJob(jobId);
             resp.sendRedirect(req.getContextPath() + "/admin/jobs");
 
+        } else if (path.equals("/jobs/update-openings") || path.equals("/jobs/update-openings/")) {
+            String jobId = req.getParameter("jobId");
+            String openingsStr = req.getParameter("openings");
+            if (jobId != null && openingsStr != null) {
+                try {
+                    int openings = Integer.parseInt(openingsStr.trim());
+                    ds.updateJobOpenings(jobId, openings);
+                } catch (NumberFormatException ignored) {}
+            }
+            resp.sendRedirect(req.getContextPath() + "/admin/jobs/" + jobId);
+
         } else if (path.equals("/applications/action") || path.equals("/applications/action/")) {
             String appId    = req.getParameter("appId");
             String action   = req.getParameter("action");
@@ -237,12 +258,14 @@ public class AdminServlet extends BaseServlet {
             resp.sendRedirect(req.getContextPath() + "/admin");
 
         } else if (path.startsWith("/workload/save")) {
-            String taId      = req.getParameter("taId");
-            String hoursStr  = req.getParameter("hours");
+            String taId     = req.getParameter("taId");
+            String hoursStr = req.getParameter("hours");
             User ta = ds.findUserById(taId);
             if (ta != null && hoursStr != null && !hoursStr.trim().isEmpty()) {
-                try { ta.setWorkload(Integer.parseInt(hoursStr.trim())); ds.updateUser(ta); }
-                catch (NumberFormatException ignored) {}
+                try {
+                    ta.setWorkload(Integer.parseInt(hoursStr.trim()));
+                    ds.updateUser(ta);   // updateUser already calls saveUsers()
+                } catch (NumberFormatException ignored) {}
             }
             resp.sendRedirect(req.getContextPath() + "/admin/workload");
 

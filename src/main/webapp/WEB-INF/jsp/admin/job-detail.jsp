@@ -72,6 +72,14 @@
         if (jobId == null) jobId = "1";
         List<Map<String,String>> applicants = (List<Map<String,String>>) request.getAttribute("applicants");
         String status = job.getOrDefault("status","active");
+        Integer openings    = (Integer) request.getAttribute("openings");
+        Integer acceptedCnt = (Integer) request.getAttribute("acceptedCount");
+        Integer applicantCnt = (Integer) request.getAttribute("applicantCount");
+        Boolean isFull      = (Boolean) request.getAttribute("isFull");
+        if (openings    == null) openings    = 1;
+        if (acceptedCnt  == null) acceptedCnt  = 0;
+        if (applicantCnt == null) applicantCnt = (applicants != null ? applicants.size() : 0);
+        if (isFull      == null) isFull      = false;
       %>
 
       <div class="card card-p8" style="margin-top:16px;margin-bottom:24px;">
@@ -80,8 +88,8 @@
             <h2 class="text-2xl mb-2"><%= job.getOrDefault("title","Job Title") %></h2>
             <p class="text-gray-600">Posted by: <%= job.getOrDefault("postedBy","Unknown") %></p>
           </div>
-          <span class="badge <%= "active".equals(status) ? "badge-active" : "badge-closed" %>">
-            <%= status.substring(0,1).toUpperCase() + status.substring(1) %>
+          <span class="badge <%= "active".equals(status) ? "badge-active" : "closed".equals(status) ? "badge-closed" : "badge-pending" %>">
+            <%= "deactive".equals(status) ? "Deactivated (by MO)" : status.substring(0,1).toUpperCase() + status.substring(1) %>
           </span>
         </div>
 
@@ -89,6 +97,29 @@
           <h3>Description</h3>
           <p><%= job.getOrDefault("description","No description.") %></p>
         </div>
+
+        <!-- Recruitment stats (same layout as TA portal) -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;">
+          <div style="text-align:center;padding:12px 8px;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;">
+            <p style="font-size:22px;font-weight:700;color:#15803d;margin:0;"><%= openings %></p>
+            <p style="font-size:12px;color:#166534;margin:4px 0 0 0;font-weight:500;">Openings</p>
+          </div>
+          <div style="text-align:center;padding:12px 8px;background:#eff6ff;border:1px solid #93c5fd;border-radius:8px;">
+            <p style="font-size:22px;font-weight:700;color:#1d4ed8;margin:0;"><%= acceptedCnt %></p>
+            <p style="font-size:12px;color:#1e40af;margin:4px 0 0 0;font-weight:500;">Accepted</p>
+          </div>
+          <div style="text-align:center;padding:12px 8px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;">
+            <p style="font-size:22px;font-weight:700;color:#374151;margin:0;"><%= applicantCnt %></p>
+            <p style="font-size:12px;color:#6b7280;margin:4px 0 0 0;font-weight:500;">Applicants</p>
+          </div>
+        </div>
+
+        <% if (isFull) { %>
+        <div style="padding:12px 16px;background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;margin-bottom:16px;">
+          <p style="margin:0;font-size:14px;font-weight:600;color:#b91c1c;">Position Full</p>
+          <p style="margin:4px 0 0 0;font-size:13px;color:#7f1d1d;">All <%= openings %> openings have been filled. You can increase openings below or accept no more applicants.</p>
+        </div>
+        <% } %>
 
         <div class="detail-grid mb-4">
           <div>
@@ -101,12 +132,41 @@
           </div>
         </div>
 
+        <div style="margin-bottom:16px;padding:12px 16px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+          <div>
+            <span style="font-size:13px;font-weight:600;color:#0369a1;">Openings:</span>
+            <span id="openings-display" style="font-size:20px;font-weight:700;color:#0284c7;margin-left:8px;"><%= job.getOrDefault("openings","1") %></span>
+          </div>
+          <button type="button" onclick="toggleOpeningsEdit()"
+                  style="font-size:13px;padding:4px 12px;border:1px solid #0284c7;border-radius:6px;color:#0284c7;background:#fff;cursor:pointer;">
+            Edit Openings
+          </button>
+          <form id="openings-form" action="${pageContext.request.contextPath}/admin/jobs/update-openings" method="post"
+                style="display:none;align-items:center;gap:8px;flex-wrap:wrap;">
+            <input type="hidden" name="jobId" value="<%= jobId %>">
+            <input type="number" name="openings" min="1" max="99"
+                   value="<%= job.getOrDefault("openings","1") %>"
+                   style="width:70px;padding:4px 8px;border:1px solid #d1d5db;border-radius:6px;font-size:14px;">
+            <button type="submit" class="btn btn-primary btn-sm">Save</button>
+            <button type="button" onclick="toggleOpeningsEdit()"
+                    style="font-size:13px;padding:4px 10px;border:1px solid #d1d5db;border-radius:6px;background:#fff;cursor:pointer;">Cancel</button>
+          </form>
+        </div>
+
         <% if ("active".equals(status)) { %>
           <form action="${pageContext.request.contextPath}/admin/jobs/action" method="post" style="display:inline;">
             <input type="hidden" name="jobId" value="<%= jobId %>">
             <input type="hidden" name="action" value="close">
             <button type="submit" class="btn btn-outline-red btn-sm"
-                    onclick="return confirm('Close this job posting?')">Close Job</button>
+                    onclick="return confirm('Close this job? It will be hidden from everyone except admins.')">Close Job</button>
+          </form>
+        <% } %>
+        <% if ("deactive".equals(status) || "closed".equals(status)) { %>
+          <form action="${pageContext.request.contextPath}/admin/jobs/action" method="post" style="display:inline;">
+            <input type="hidden" name="jobId" value="<%= jobId %>">
+            <input type="hidden" name="action" value="activate">
+            <button type="submit" class="btn btn-outline-green btn-sm"
+                    onclick="return confirm('Reactivate this job posting?')">Reactivate Job</button>
           </form>
         <% } %>
       </div>
@@ -263,6 +323,11 @@ function showDetails(appId) {
 
 function closeModal() {
   document.getElementById('modal-overlay').classList.remove('active');
+}
+
+function toggleOpeningsEdit() {
+  var form = document.getElementById('openings-form');
+  form.style.display = form.style.display === 'none' ? 'flex' : 'none';
 }
 </script>
 </body>

@@ -30,6 +30,7 @@
             <div class="filter-group">
               <button class="btn btn-primary btn-sm" onclick="setFilter('all',this)">All Jobs</button>
               <button class="btn btn-outline btn-sm" onclick="setFilter('active',this)">Active</button>
+              <button class="btn btn-outline btn-sm" onclick="setFilter('deactive',this)">Deactivated</button>
               <button class="btn btn-outline btn-sm" onclick="setFilter('closed',this)">Closed</button>
             </div>
           </div>
@@ -47,13 +48,13 @@
                  data-title="<%= job.get("title").toLowerCase() %>"
                  data-postedby="<%= job.getOrDefault("postedBy","").toLowerCase() %>"
                  data-dept="<%= job.getOrDefault("department","").toLowerCase() %>"
-                 style="<%= "closed".equals(status) ? "background:#f3f4f6;" : "" %>">
+                 style="<%= "closed".equals(status) ? "background:#f3f4f6;" : "deactive".equals(status) ? "background:#fffbeb;" : "" %>">
               <div class="applicant-card-inner">
                 <div style="flex:1;">
                   <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
                     <h3 class="text-lg"><%= job.get("title") %></h3>
-                    <span class="badge <%= "active".equals(status) ? "badge-active" : "badge-closed" %>">
-                      <%= status.substring(0,1).toUpperCase() + status.substring(1) %>
+                    <span class="badge <%= "active".equals(status) ? "badge-active" : "closed".equals(status) ? "badge-closed" : "badge-pending" %>">
+                      <%= "deactive".equals(status) ? "Deactivated" : status.substring(0,1).toUpperCase() + status.substring(1) %>
                     </span>
                   </div>
                   <p class="text-gray-600 mb-1">Posted by: <%= job.getOrDefault("postedBy","Unknown") %></p>
@@ -70,15 +71,15 @@
                       <input type="hidden" name="jobId" value="<%= job.get("jobId") %>">
                       <input type="hidden" name="action" value="close">
                       <button type="submit" class="btn btn-outline-red btn-sm"
-                              onclick="return confirm('Close this job posting?')">Close Job</button>
+                              onclick="return confirm('Close this job? Only admins will be able to see it.')">Close Job</button>
                     </form>
                   <% } %>
-                  <% if ("closed".equals(status)) { %>
+                  <% if ("deactive".equals(status) || "closed".equals(status)) { %>
                   <form action="${pageContext.request.contextPath}/admin/jobs/action" method="post" style="display:inline;">
                     <input type="hidden" name="jobId" value="<%= job.get("jobId") %>">
                     <input type="hidden" name="action" value="activate">
                     <button type="submit" class="btn btn-outline-green btn-sm"
-                            onclick="return confirm('Activate this job posting?')">Activate</button>
+                            onclick="return confirm('Reactivate this job posting?')">Reactivate</button>
                   </form>
                   <% } %>
                 </div>
@@ -99,19 +100,23 @@
         <p class="sidebar-title">OVERVIEW</p>
         <div class="stat-card blue">
           <p class="stat-label">Total Jobs</p>
-          <p class="stat-value blue">${totalJobs != null ? totalJobs : 7}</p>
+          <p class="stat-value blue">${totalJobs != null ? totalJobs : 0}</p>
         </div>
         <div class="stat-card green">
           <p class="stat-label">Active Jobs</p>
-          <p class="stat-value green">${activeJobs != null ? activeJobs : 5}</p>
+          <p class="stat-value green">${activeJobs != null ? activeJobs : 0}</p>
+        </div>
+        <div class="stat-card yellow">
+          <p class="stat-label">Deactivated</p>
+          <p class="stat-value yellow">${deactiveJobs != null ? deactiveJobs : 0}</p>
         </div>
         <div class="stat-card red">
           <p class="stat-label">Closed Jobs</p>
-          <p class="stat-value red">${closedJobs != null ? closedJobs : 2}</p>
+          <p class="stat-value red">${closedJobs != null ? closedJobs : 0}</p>
         </div>
         <div class="stat-card">
           <p class="stat-label">Total Applicants</p>
-          <p class="stat-value">${totalApplicants != null ? totalApplicants : 35}</p>
+          <p class="stat-value">${totalApplicants != null ? totalApplicants : 0}</p>
         </div>
       </div>
     </div>
