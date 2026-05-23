@@ -135,21 +135,64 @@
               if (courseId == null) courseId = "1";
               Boolean isOwner = (Boolean) request.getAttribute("isOwner");
               if (isOwner == null) isOwner = false;
+              Boolean isFull = (Boolean) request.getAttribute("isFull");
+              if (isFull == null) isFull = false;
+              Integer openingsVal   = (Integer) request.getAttribute("openings");
+              Integer acceptedCount = (Integer) request.getAttribute("acceptedCount");
+              Integer totalApps     = (Integer) request.getAttribute("totalApplicants");
+              if (openingsVal   == null) openingsVal   = 1;
+              if (acceptedCount == null) acceptedCount = 0;
+              if (totalApps     == null) totalApps     = 0;
               java.util.Map<String,String> job = (java.util.Map<String,String>) request.getAttribute("job");
-              if (job != null) {
             %>
+
+            <!-- Recruitment stats cards -->
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:16px 0;">
+              <div style="text-align:center;padding:12px 8px;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;">
+                <p style="font-size:22px;font-weight:700;color:#15803d;margin:0;"><%= openingsVal %></p>
+                <p style="font-size:12px;color:#166534;margin:4px 0 0 0;font-weight:500;">Openings</p>
+              </div>
+              <div style="text-align:center;padding:12px 8px;background:#eff6ff;border:1px solid #93c5fd;border-radius:8px;">
+                <p style="font-size:22px;font-weight:700;color:#1d4ed8;margin:0;"><%= acceptedCount %></p>
+                <p style="font-size:12px;color:#1e40af;margin:4px 0 0 0;font-weight:500;">Accepted</p>
+              </div>
+              <div style="text-align:center;padding:12px 8px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;">
+                <p style="font-size:22px;font-weight:700;color:#374151;margin:0;"><%= totalApps %></p>
+                <p style="font-size:12px;color:#6b7280;margin:4px 0 0 0;font-weight:500;">Applicants</p>
+              </div>
+            </div>
+
+            <% if (isFull) { %>
+            <div style="margin-bottom:12px;padding:12px 16px;background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;">
+              <p style="margin:0;font-size:14px;font-weight:600;color:#b91c1c;">Position Full — No more acceptances allowed</p>
+              <p style="margin:4px 0 0 0;font-size:13px;color:#7f1d1d;">All <%= openingsVal %> openings have been filled. To increase the number of openings, please contact an administrator.</p>
+            </div>
+            <% } %>
+
+            <% if (job != null) { %>
             <div style="margin-top:20px;padding:16px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
                 <h3 style="font-size:15px;font-weight:600;color:#374151;margin:0;">Job Details</h3>
                 <div style="display:flex;gap:8px;">
                   <% if (isOwner) { %>
-                  <form action="${pageContext.request.contextPath}/mo/delete-job" method="post" style="display:inline;">
+                  <% String jobStatus = job.get("status"); if (jobStatus == null) jobStatus = "active"; %>
+                  <% if ("active".equals(jobStatus)) { %>
+                  <form action="${pageContext.request.contextPath}/mo/deactivate-job" method="post" style="display:inline;">
                     <input type="hidden" name="jobId" value="<%= courseId %>">
                     <button type="submit" class="btn btn-outline-red btn-sm"
-                            onclick="return confirm('Are you sure you want to delete this job? All applications will also be deleted. This action cannot be undone.')">
-                      Delete Job
+                            onclick="return confirm('Deactivate this job? It will be hidden from TA job listings. All current applications will be retained. You can reactivate it later.')">
+                      Deactivate Job
                     </button>
                   </form>
+                  <% } else if ("deactive".equals(jobStatus)) { %>
+                  <form action="${pageContext.request.contextPath}/mo/reactivate-job" method="post" style="display:inline;">
+                    <input type="hidden" name="jobId" value="<%= courseId %>">
+                    <button type="submit" class="btn btn-outline-green btn-sm"
+                            onclick="return confirm('Reactivate this job? It will be visible to TAs again.')">
+                      Reactivate Job
+                    </button>
+                  </form>
+                  <% } %>
                   <% } %>
                   <button id="toggleJobDetails" onclick="toggleJobDetails()"
                           style="background:none;border:1px solid #d1d5db;border-radius:6px;padding:4px 12px;cursor:pointer;font-size:13px;color:#6b7280;transition:all 0.2s;">
@@ -173,6 +216,9 @@
 
                   <span style="color:#6b7280;font-weight:500;">Posted Date:</span>
                   <span style="color:#111827;"><%= job.get("postedDate") != null && !job.get("postedDate").isEmpty() ? job.get("postedDate") : "N/A" %></span>
+
+                  <span style="color:#6b7280;font-weight:500;">Openings:</span>
+                  <span style="color:#111827;"><%= job.get("openings") != null && !job.get("openings").isEmpty() ? job.get("openings") : "1" %></span>
 
                   <span style="color:#6b7280;font-weight:500;">Status:</span>
                   <span style="color:#111827;"><%= job.get("status") != null && !job.get("status").isEmpty() ? job.get("status") : "active" %></span>
@@ -226,6 +272,9 @@
                   <button type="button" class="btn btn-outline btn-sm"
                           onclick="showDetails('<%= app.get("id") %>')">View Details</button>
                   <% if (isOwner) { %>
+                  <% if (isFull) { %>
+                  <span style="font-size:12px;color:#b91c1c;font-weight:500;">Position full — contact admin to increase openings</span>
+                  <% } else { %>
                   <form action="${pageContext.request.contextPath}/mo/select/action"
                         method="post" style="display:inline;">
                     <input type="hidden" name="appId"  value="<%= app.get("id") %>">
@@ -240,6 +289,7 @@
                     <input type="hidden" name="action" value="reject">
                     <button type="submit" class="btn btn-outline-red btn-sm">Reject</button>
                   </form>
+                  <% } %>
                   <% } else { %>
                   <span class="lock-notice">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -363,12 +413,10 @@
         </div>
 
         <%-- 满员警告 --%>
-        <% Boolean isFull = (Boolean) request.getAttribute("isFull");
-           Integer openingsVal = (Integer) request.getAttribute("openings");
-           if (Boolean.TRUE.equals(isFull)) { %>
+        <% if (Boolean.TRUE.equals(isFull)) { %>
         <div style="margin-top:12px;padding:10px 12px;background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;">
           <p style="font-size:13px;font-weight:600;color:#b91c1c;margin:0 0 4px 0;">⚠️ Position Full</p>
-          <p style="font-size:12px;color:#7f1d1d;margin:0;line-height:1.5;">All <%= openingsVal != null ? openingsVal : 1 %> openings have been filled. New applications are blocked.</p>
+          <p style="font-size:12px;color:#7f1d1d;margin:0;line-height:1.5;">All <%= openingsVal %> openings have been filled. New applications are blocked.</p>
         </div>
         <% } %>
 

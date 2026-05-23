@@ -120,6 +120,9 @@
               if (applications != null && !applications.isEmpty()) {
                 for (Map<String,String> app : applications) {
                   String status = app.get("status");
+                  String jobStatus = app.getOrDefault("jobStatus", "active");
+                  boolean jobDeactivated = "deactive".equals(jobStatus);
+
                   String badgeClass = "badge-pending";
                   if ("accepted".equals(status)) badgeClass = "badge-accepted";
                   else if ("rejected".equals(status)) badgeClass = "badge-rejected";
@@ -139,13 +142,20 @@
 
                   boolean isNewToday = today.equals(app.getOrDefault("appliedDate",""))
                                        && "accepted".equals(status);
+
+                  // card style: greyed out if accepted & job deactivated
+                  String cardStyle = jobDeactivated && "accepted".equals(status)
+                      ? "opacity:0.55;filter:grayscale(40%);background:#f3f4f6;" : "";
             %>
-            <div class="applicant-card app-status-card" data-status="<%= status %>">
+            <div class="applicant-card app-status-card" data-status="<%= status %>" style="<%= cardStyle %>">
               <div class="applicant-card-inner">
                 <div style="flex:1;">
                   <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap;">
                     <h3 class="text-lg"><%= app.get("jobTitle") %></h3>
                     <span class="badge <%= badgeClass %>"><%= statusLabel %></span>
+                    <% if (jobDeactivated) { %>
+                    <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;background:#e5e7eb;color:#6b7280;border:1px solid #d1d5db;">Job Deactivated</span>
+                    <% } %>
                     <% if (isNewToday) { %><span class="badge-new-today">🎉 Accepted Today!</span><% } %>
                     <span class="ai-score-badge <%= aiBadgeClass %>"><%= aiBadgeLabel %></span>
                   </div>
@@ -153,7 +163,19 @@
                   <% String cl = app.get("coverLetter"); if (cl != null && !cl.trim().isEmpty()) { %>
                   <p class="text-sm text-gray-600" style="margin-top:4px;">Cover letter: <%= cl.length() > 80 ? cl.substring(0,80) + "..." : cl %></p>
                   <% } %>
-                  <% if ("accepted".equals(status)) {
+                  <% if ("accepted".equals(status) && jobDeactivated) { %>
+                  <div style="margin-top:8px;padding:10px 14px;background:#fef2f2;border:1px solid #fca5a5;border-radius:6px;font-size:13px;color:#b91c1c;">
+                    This job has been deactivated. Please contact the Module Organiser for further information.
+                    <%
+                      String moEmail = app.getOrDefault("moEmail","");
+                      String moName  = app.getOrDefault("moName","");
+                      if (!moEmail.isEmpty()) {
+                    %>
+                    — <strong><%= moName.isEmpty() ? "MO" : moName %></strong>
+                    &lt;<a href="mailto:<%= moEmail %>" style="color:#b91c1c;"><%= moEmail %></a>&gt;
+                    <% } %>
+                  </div>
+                  <% } else if ("accepted".equals(status)) {
                        String moEmail = app.getOrDefault("moEmail","");
                        String moName  = app.getOrDefault("moName","");
                   %>

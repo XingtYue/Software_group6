@@ -114,8 +114,9 @@
       display: inline-block;
       margin-right: 4px;
     }
-    .status-dot.active { background: #22c55e; }
-    .status-dot.closed { background: #ef4444; }
+    .status-dot.active  { background: #22c55e; }
+    .status-dot.closed  { background: #ef4444; }
+    .status-dot.deactive { background: #f59e0b; }
   </style>
 </head>
 <body>
@@ -222,7 +223,7 @@
                       <span class="position-title"><%= pos.get("title") %></span>
                     </div>
                     <div class="position-meta">
-                      <span class="status-dot <%= st %>"></span><%= st %>
+                      <span class="status-dot <%= st %>"></span><%= "deactive".equals(st) ? "Deactivated" : st %>
                       &nbsp;·&nbsp;<%= pos.get("hours") %> hrs/wk
                       &nbsp;·&nbsp;<%= pos.get("duration") %>
                       &nbsp;·&nbsp;Posted: <%= pos.get("postedDate") %>
@@ -294,7 +295,7 @@
                       <span class="position-title"><%= pos.get("title") %></span>
                     </div>
                     <div class="position-meta">
-                      <span class="status-dot <%= st %>"></span><%= st %>
+                      <span class="status-dot <%= st %>"></span><%= "deactive".equals(st) ? "Deactivated" : st %>
                       &nbsp;·&nbsp;<%= pos.get("hours") %> hrs/wk
                       &nbsp;·&nbsp;<%= pos.get("duration") %>
                     </div>
