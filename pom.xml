@@ -14,8 +14,8 @@
   <description>BUPT International School TA Recruitment System - Java Servlet/JSP</description>
 
   <properties>
-    <maven.compiler.source>1.8</maven.compiler.source>
-    <maven.compiler.target>1.8</maven.compiler.target>
+    <maven.compiler.source>11</maven.compiler.source>
+    <maven.compiler.target>11</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <failOnMissingWebXml>false</failOnMissingWebXml>
   </properties>
@@ -57,6 +57,14 @@
       <artifactId>poi-ooxml</artifactId>
       <version>4.1.2</version>
     </dependency>
+
+    <!-- JUnit 5 for unit testing -->
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>5.10.2</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -71,6 +79,13 @@
         </configuration>
       </plugin>
 
+      <!-- JUnit 5 support -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>3.2.5</version>
+      </plugin>
+
       <!-- Tomcat 9 Maven Plugin for easy deployment -->
       <plugin>
         <groupId>org.apache.tomcat.maven</groupId>
@@ -79,10 +94,6 @@
         <configuration>
           <port>8080</port>
           <path>/ta-recruitment</path>
-          <systemProperties>
-          <maven.compiler.source>1.8</maven.compiler.source>
-          <maven.compiler.target>1.8</maven.compiler.target>
-        </systemProperties>
           <uriEncoding>UTF-8</uriEncoding>
         </configuration>
       </plugin>

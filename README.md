@@ -15,6 +15,7 @@ A Java Servlet/JSP web application for BUPT International School's Teaching Assi
 | Document Parsing | Apache POI 4.1.2 (`.docx` extraction) |
 | Build Tool | Apache Maven 3.6+ |
 | Server | Apache Tomcat 9.x |
+| Testing | JUnit 5 (Jupiter) |
 
 ---
 
@@ -89,7 +90,7 @@ Software_group6/
 
 ## Prerequisites
 
-- **Java JDK 8+** (JDK 11 or 17 recommended)
+- **Java JDK 11+** (JDK 17 recommended)
 - **Apache Maven 3.6+**
 - **Apache Tomcat 9.x** (or use the embedded Maven Tomcat plugin)
 - **Gemini API Key** — required for AI CV matching (see below)
