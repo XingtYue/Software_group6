@@ -35,6 +35,20 @@ public class TAServlet extends BaseServlet {
                 m.put("hasApplied", String.valueOf(ds.hasApplied(userId, j.getJobId())));
                 jobMaps.add(m);
             }
+            String searchQuery = req.getParameter("q");
+            if (searchQuery != null && !searchQuery.trim().isEmpty()) {
+                String q = searchQuery.trim().toLowerCase();
+                List<Map<String,String>> filtered = new ArrayList<>();
+                for (Map<String,String> m : jobMaps) {
+                    String title = m.getOrDefault("title", "").toLowerCase();
+                    String dept  = m.getOrDefault("department", "").toLowerCase();
+                    String course = m.getOrDefault("courseName", "").toLowerCase();
+                    if (title.contains(q) || dept.contains(q) || course.contains(q)) {
+                        filtered.add(m);
+                    }
+                }
+                jobMaps = filtered;
+            }
             List<Application> myApps = ds.getApplicationsByTA(userId);
             int activeApps = 0, acceptedPositions = 0;
             for (Application a : myApps) {
