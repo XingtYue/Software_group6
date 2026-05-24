@@ -5,6 +5,12 @@ import javax.servlet.annotation.WebFilter;
 import javax.servlet.http.*;
 import java.io.IOException;
 
+/**
+ * Servlet filter that enforces authentication and role-based access control.
+ *
+ * <p>Protects the {@code /admin/*}, {@code /mo/*}, and {@code /ta/*} URL patterns.
+ * Unauthenticated requests and role mismatches are redirected to {@code /login}.
+ */
 @WebFilter(urlPatterns = {"/admin/*", "/mo/*", "/ta/*"})
 public class AuthFilter implements Filter {
 

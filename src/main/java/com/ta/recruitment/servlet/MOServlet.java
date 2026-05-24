@@ -12,6 +12,15 @@ import java.io.*;
 import java.nio.file.Files;
 import java.util.*;
 
+/**
+ * Handles all Module Organiser (MO) portal requests under {@code /mo/*}.
+ *
+ * <p>GET routes: applicant list (jobs overview), course/job detail, post-job form,
+ * CV download, and profile page.
+ *
+ * <p>POST routes: post a new job, accept/reject an applicant, reactivate or deactivate
+ * a job, update profile, and trigger AI match analysis (AJAX JSON endpoint).
+ */
 @WebServlet("/mo/*")
 public class MOServlet extends BaseServlet {
 
@@ -385,7 +394,12 @@ public class MOServlet extends BaseServlet {
         }
     }
 
-    /** JSON 字符串值转义，与 DataStore.esc() 保持一致 */
+    /**
+     * Escapes a string for safe inclusion inside a JSON double-quoted value.
+     *
+     * @param s the raw string (may be {@code null})
+     * @return JSON-safe escaped string, or {@code ""} if input is {@code null}
+     */
     private String jsonEsc(String s) {
         if (s == null) return "";
         return s.replace("\\", "\\\\")

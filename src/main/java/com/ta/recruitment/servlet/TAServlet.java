@@ -13,6 +13,15 @@ import java.io.*;
 import java.nio.file.Files;
 import java.util.*;
 
+/**
+ * Handles all Teaching Assistant (TA) portal requests under {@code /ta/*}.
+ *
+ * <p>GET routes: job listing (with keyword search), job detail, application form,
+ * application status list, profile page, and CV download.
+ *
+ * <p>POST routes: submit an application (with optional CV upload), trigger AI
+ * re-analysis (AJAX JSON endpoint), and update profile / upload CV.
+ */
 @WebServlet("/ta/*")
 @MultipartConfig(maxFileSize = 10 * 1024 * 1024)
 public class TAServlet extends BaseServlet {
@@ -362,9 +371,21 @@ public class TAServlet extends BaseServlet {
     }
 
     /**
-     * Builds CV context, reads CV file, collects competition/workload params,
-     * calls GeminiService, persists the result, and returns the populated Application.
-     * Safe to call from both background threads and the AJAX endpoint.
+     * Builds CV and job-requirement context, reads the CV file, invokes
+     * {@link com.ta.recruitment.service.GeminiService#analyzeMatch} with full competition
+     * and workload parameters, persists the result, and returns the populated Application.
+     * Safe to call from both background daemon threads and the synchronous AJAX endpoint.
+     *
+     * @param appId       the application ID to update with AI results
+     * @param cvFileName  the CV filename (relative to uploads directory)
+     * @param coverLetter the applicant's cover letter text
+     * @param uploadsDir  absolute path to the CV uploads directory
+     * @param ta          the TA user record (may be {@code null})
+     * @param job         the job the TA applied for
+     * @param taId        the TA user ID (used to read current workload)
+     * @param ds          the data store
+     * @return the Application populated with AI analysis fields
+     * @throws Exception if the Gemini API call fails or the CV file cannot be read
      */
     private Application runGeminiAnalysis(String appId, String cvFileName, String coverLetter,
                                           String uploadsDir, User ta, Job job,
@@ -473,12 +494,27 @@ public class TAServlet extends BaseServlet {
         return aiResult;
     }
 
+    /**
+     * Escapes a string for safe inclusion inside a JSON double-quoted value.
+     *
+     * @param s the raw string (may be {@code null})
+     * @return JSON-safe escaped string, or {@code ""} if input is {@code null}
+     */
     private String jsonEsc(String s) {
         if (s == null) return "";
         return s.replace("\\", "\\\\").replace("\"", "\\\"")
                 .replace("\n", "\\n").replace("\r", "");
     }
 
+    /**
+     * Extracts the CV file from a multipart request part, saves it to the uploads directory
+     * with a unique filename, and returns the saved filename.
+     *
+     * @param part      the {@code Part} from the multipart request (may be {@code null})
+     * @param userId    the TA user ID, used as a filename prefix
+     * @param uploadDir the absolute path to the directory to save the file in
+     * @return the saved filename, or {@code null} if no file was provided or the upload failed
+     */
     private String saveCvPart(Part part, String userId, String uploadDir) {
         if (part == null || part.getSize() == 0) return null;
         String originalName = null;

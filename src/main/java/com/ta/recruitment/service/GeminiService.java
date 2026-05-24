@@ -116,6 +116,21 @@ public class GeminiService {
     // BUILD REQUEST BODY
     // ---------------------------------------------------------------
 
+    /**
+     * Builds the full JSON request body for the Gemini API, optionally embedding a
+     * base64-encoded PDF as an inline data part before the text prompt.
+     *
+     * @param cvContent           plain-text CV / cover-letter content
+     * @param currentJobInfo      formatted job requirements text
+     * @param cvPdfBytes          raw PDF bytes to embed, or {@code null} for text-only
+     * @param currentWorkload     the TA's current total committed hours
+     * @param applicantCount      total number of applicants for this job
+     * @param acceptedCount       number already accepted for this job
+     * @param openings            maximum openings for this job
+     * @param applyWorkloadPenalty {@code true} to instruct the AI to deduct for overload
+     * @param otherAvailableJobs  formatted list of alternative jobs in the same course
+     * @return the JSON request body string ready to POST to the Gemini endpoint
+     */
     private String buildRequestBody(String cvContent,
                                     String currentJobInfo,
                                     byte[] cvPdfBytes,
@@ -153,6 +168,22 @@ public class GeminiService {
             + "}";
     }
 
+    /**
+     * Builds the natural-language prompt sent to Gemini.
+     * Injects a workload warning (MO-side only) and an alternative-job instruction
+     * (TA-side only, when the position is highly competitive).
+     *
+     * @param cvContent           plain-text CV / cover-letter content
+     * @param currentJobInfo      formatted job requirements text
+     * @param hasPdf              {@code true} if a PDF was also attached
+     * @param currentWorkload     the TA's current total committed hours
+     * @param applicantCount      total number of applicants for this job
+     * @param acceptedCount       number already accepted for this job
+     * @param openings            maximum openings for this job
+     * @param applyWorkloadPenalty {@code true} to inject the workload-penalty instruction
+     * @param otherAvailableJobs  formatted list of alternative jobs in the same course
+     * @return the complete prompt string
+     */
     private String buildPrompt(String cvContent,
                                String currentJobInfo,
                                boolean hasPdf,
@@ -235,6 +266,14 @@ public class GeminiService {
     // PARSE GEMINI RESPONSE
     // ---------------------------------------------------------------
 
+    /**
+     * Extracts the text content from a Gemini API response body, skipping any
+     * internal "thought" parts produced by the model's reasoning process.
+     *
+     * @param responseBody the raw JSON response body from the Gemini API
+     * @return the trimmed text of the first non-thought part
+     * @throws RuntimeException if no usable text part is found
+     */
     private String extractTextFromResponse(String responseBody) {
         JsonObject root = gson.fromJson(responseBody, JsonObject.class);
 
@@ -268,6 +307,13 @@ public class GeminiService {
         throw new RuntimeException("No non-thought text part found in Gemini response");
     }
 
+    /**
+     * Parses the five expected AI result fields from the JSON string returned by Gemini
+     * and populates the given {@link Application} object.
+     *
+     * @param app  the application to populate
+     * @param json the sanitized JSON string containing the AI result fields
+     */
     private void populateApplication(Application app, String json) {
         JsonObject result = gson.fromJson(json, JsonObject.class);
 
@@ -304,6 +350,13 @@ public class GeminiService {
     // UTILITIES
     // ---------------------------------------------------------------
 
+    /**
+     * Strips Markdown code fences, escapes bare control characters inside JSON strings,
+     * and attempts to repair common truncation issues (unclosed string or missing closing brace).
+     *
+     * @param json the raw JSON text from the API (may contain Markdown fences or control chars)
+     * @return a best-effort valid JSON string, or {@code "{}"} if input is {@code null}
+     */
     private String sanitizeJsonString(String json) {
         if (json == null) return "{}";
         json = json.replaceAll("^```json\\s*", "").replaceAll("^```\\s*", "").replaceAll("```\\s*$", "").trim();
@@ -339,6 +392,12 @@ public class GeminiService {
         return s;
     }
 
+    /**
+     * Escapes a string for safe embedding inside a JSON double-quoted value.
+     *
+     * @param s the raw string (may be {@code null})
+     * @return JSON-safe escaped string, or {@code ""} if input is {@code null}
+     */
     private String escapeJson(String s) {
         if (s == null) return "";
         return s.replace("\\", "\\\\")
