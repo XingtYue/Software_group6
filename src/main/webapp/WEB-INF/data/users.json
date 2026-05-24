@@ -15,5 +15,7 @@
   {"id":"u294779608","name":"try","email":"try@bupt.edu.cn","password":"mo1234","role":"mo","status":"active","department":"FOR TEST","phone":"11111111","cvFileName":"","workload":"0","modules":"BBU0516|0516test","pendingModules":""},
   {"id":"u446108113","name":"123","email":"123@bupt.edu.cn","password":"11111111","role":"mo","status":"active","department":"FOR TEST","phone":"11111111","cvFileName":"","workload":"0","modules":"BBU0516|0516","pendingModules":""},
   {"id":"u258418836","name":"OverWLTest","email":"owl@bupt.edu.cn","password":"ta1234","role":"ta","status":"active","department":"Computer Science","phone":"11111111","cvFileName":"u258418836_cv_1779087280427.pdf","workload":"81","modules":"","pendingModules":""},
-  {"id":"u591694308","name":"xingtong yue","email":"yxt@bupt.edu.cn","password":"041126","role":"ta","status":"active","department":"FOR TEST","phone":"11111111","cvFileName":"","workload":"0","modules":"","pendingModules":""}
+  {"id":"u591694308","name":"xingtong yue","email":"yxt@bupt.edu.cn","password":"041126","role":"ta","status":"active","department":"FOR TEST","phone":"11111111","cvFileName":"","workload":"0","modules":"","pendingModules":""},
+  {"id":"u133405854","name":"vffcf","email":"sds@bupt.edu.cn","password":"123456","role":"mo","status":"active","department":"Computer Science","phone":"","cvFileName":"","workload":"0","modules":"","pendingModules":""},
+  {"id":"u159130594","name":"weew","email":"weew@bupt.edu.cn","password":"123456","role":"mo","status":"active","department":"Computer Science","phone":"11111111","cvFileName":"","workload":"0","modules":"","pendingModules":"BBU0543|TESTMORE"}
 ]

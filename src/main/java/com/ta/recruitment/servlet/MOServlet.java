@@ -130,7 +130,11 @@ public class MOServlet extends BaseServlet {
 
         } else if (path.equals("/profile") || path.equals("/profile/")) {
             User user = ds.findUserById(userId);
-            if (user != null) req.setAttribute("user", user.toMap());
+            if (user != null) {
+                req.setAttribute("user", user.toMap());
+                req.setAttribute("moModules", user.getModuleList());
+                req.setAttribute("moPendingModules", user.getPendingModuleList());
+            }
             req.getRequestDispatcher("/WEB-INF/jsp/mo/profile.jsp").forward(req, resp);
 
         } else {
@@ -217,7 +221,118 @@ public class MOServlet extends BaseServlet {
             resp.sendRedirect(req.getContextPath() + "/mo/applicants?error=deactivate");
 
         } else if (path.equals("/profile") || path.equals("/profile/")) {
-            handleProfilePost(req, resp, ds, userId, "/WEB-INF/jsp/mo/profile.jsp");
+            String action = req.getParameter("action");
+            if ("requestModule".equals(action)) {
+                User user = ds.findUserById(userId);
+                String courseCode = req.getParameter("courseCode");
+                String courseName = req.getParameter("courseName");
+                if (user != null && courseCode != null && !courseCode.trim().isEmpty()) {
+                    String code  = courseCode.trim();
+                    String cname = (courseName != null && !courseName.trim().isEmpty()) ? courseName.trim() : code;
+                    String entry = code + "|" + cname;
+                    // Reject if already approved
+                    boolean alreadyApproved = false;
+                    for (java.util.Map<String,String> m : user.getModuleList()) {
+                        if (code.equals(m.get("code"))) { alreadyApproved = true; break; }
+                    }
+                    // Reject if already pending
+                    boolean alreadyPending = false;
+                    for (java.util.Map<String,String> m : user.getPendingModuleList()) {
+                        if (code.equals(m.get("code"))) { alreadyPending = true; break; }
+                    }
+                    if (alreadyApproved) {
+                        req.setAttribute("error", "Module " + code + " is already assigned to your account.");
+                        req.setAttribute("activeTab", "modules");
+                    } else if (alreadyPending) {
+                        req.setAttribute("error", "A request for module " + code + " is already pending approval.");
+                        req.setAttribute("activeTab", "modules");
+                    } else {
+                        String existing = user.getPendingModules();
+                        user.setPendingModules(existing.isEmpty() ? entry : existing + ";" + entry);
+                        ds.updateUser(user);
+                        req.setAttribute("success", "Module request for " + code + " submitted. Awaiting admin approval.");
+                        req.setAttribute("activeTab", "modules");
+                    }
+                }
+                user = ds.findUserById(userId);
+                if (user != null) {
+                    req.setAttribute("user", user.toMap());
+                    req.setAttribute("moModules", user.getModuleList());
+                    req.setAttribute("moPendingModules", user.getPendingModuleList());
+                }
+                req.getRequestDispatcher("/WEB-INF/jsp/mo/profile.jsp").forward(req, resp);
+
+            } else if ("cancelModuleRequest".equals(action)) {
+                User user = ds.findUserById(userId);
+                String courseCode = req.getParameter("courseCode");
+                if (user != null && courseCode != null && !courseCode.trim().isEmpty()) {
+                    String trimCode = courseCode.trim();
+                    String pending = user.getPendingModules();
+                    StringBuilder sb = new StringBuilder();
+                    for (String entry : pending.split(";")) {
+                        if (!entry.trim().isEmpty() && !entry.startsWith(trimCode + "|") && !entry.equals(trimCode)) {
+                            if (sb.length() > 0) sb.append(";");
+                            sb.append(entry.trim());
+                        }
+                    }
+                    user.setPendingModules(sb.toString());
+                    ds.updateUser(user);
+                    req.setAttribute("success", "Module request for " + trimCode + " has been cancelled.");
+                    req.setAttribute("activeTab", "modules");
+                }
+                user = ds.findUserById(userId);
+                if (user != null) {
+                    req.setAttribute("user", user.toMap());
+                    req.setAttribute("moModules", user.getModuleList());
+                    req.setAttribute("moPendingModules", user.getPendingModuleList());
+                }
+                req.getRequestDispatcher("/WEB-INF/jsp/mo/profile.jsp").forward(req, resp);
+
+            } else {
+                // Handle saveProfile / changePassword inline so we can also
+                // pass moModules and moPendingModules to the JSP.
+                String profileAction = req.getParameter("action");
+                User user = ds.findUserById(userId);
+                if ("changePassword".equals(profileAction)) {
+                    if (user != null) {
+                        String oldPwd     = req.getParameter("oldPassword");
+                        String newPwd     = req.getParameter("newPassword");
+                        String confirmPwd = req.getParameter("confirmPassword");
+                        if (!user.getPassword().equals(oldPwd)) {
+                            req.setAttribute("error", "Current password is incorrect.");
+                        } else if (newPwd == null || newPwd.length() < 4) {
+                            req.setAttribute("error", "New password must be at least 4 characters.");
+                        } else if (!newPwd.equals(confirmPwd)) {
+                            req.setAttribute("error", "New passwords do not match.");
+                        } else {
+                            user.setPassword(newPwd);
+                            ds.updateUser(user);
+                            req.setAttribute("success", "Password changed successfully.");
+                        }
+                    }
+                    req.setAttribute("activeTab", "settings");
+                } else {
+                    if (user != null) {
+                        String name  = req.getParameter("name");
+                        String phone = req.getParameter("phone");
+                        String dept  = req.getParameter("department");
+                        if (name != null && !name.trim().isEmpty()) user.setName(name.trim());
+                        if (phone != null) user.setPhone(phone.trim());
+                        if (dept  != null) user.setDepartment(dept.trim());
+                        ds.updateUser(user);
+                        req.getSession().setAttribute("userName", user.getName());
+                    }
+                    req.setAttribute("success", "Profile saved successfully.");
+                    req.setAttribute("activeTab", "profile");
+                }
+                user = ds.findUserById(userId);
+                if (user != null) {
+                    req.setAttribute("user", user.toMap());
+                    req.setAttribute("moModules", user.getModuleList());
+                    req.setAttribute("moPendingModules", user.getPendingModuleList());
+                }
+                req.getRequestDispatcher("/WEB-INF/jsp/mo/profile.jsp").forward(req, resp);
+            }
 
         } else if (path.equals("/analyze-application") || path.equals("/analyze-application/")) {
             // ── AI 匹配分析接口（AJAX POST，返回纯 JSON）──────────────────────
