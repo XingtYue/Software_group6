@@ -1,5 +1,5 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
-<%@ page import="java.util.Map" %>
+<%@ page import="java.util.Map, java.util.List" %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -28,6 +28,11 @@
         String uDept  = user != null ? user.getOrDefault("department","") : "";
         String success = (String) request.getAttribute("success");
         String error   = (String) request.getAttribute("error");
+
+        @SuppressWarnings("unchecked")
+        List<Map<String,String>> moModules = (List<Map<String,String>>) request.getAttribute("moModules");
+        @SuppressWarnings("unchecked")
+        List<Map<String,String>> moPendingModules = (List<Map<String,String>>) request.getAttribute("moPendingModules");
       %>
 
       <h2 class="text-2xl mb-2">Profile Management</h2>
@@ -42,8 +47,15 @@
 
       <!-- Tabs -->
       <div class="tabs-list">
-        <button class="tab-btn active" onclick="showTab('profile',this)">Profile</button>
-        <button class="tab-btn" onclick="showTab('settings',this)">Settings</button>
+        <button class="tab-btn active" id="tab-btn-profile"   onclick="showTab('profile',this)">Profile</button>
+        <button class="tab-btn"        id="tab-btn-modules"   onclick="showTab('modules',this)">My Modules
+          <% if (moPendingModules != null && !moPendingModules.isEmpty()) { %>
+          <span style="background:#f59e0b;color:#fff;font-size:11px;padding:1px 6px;border-radius:10px;margin-left:4px;">
+            <%= moPendingModules.size() %> pending
+          </span>
+          <% } %>
+        </button>
+        <button class="tab-btn"        id="tab-btn-settings"  onclick="showTab('settings',this)">Settings</button>
       </div>
 
       <!-- Profile Tab -->
@@ -77,6 +89,87 @@
         </div>
       </div>
 
+      <!-- Modules Tab -->
+      <div id="tab-modules" class="tab-content">
+
+        <%-- Pending requests (awaiting admin approval) --%>
+        <% if (moPendingModules != null && !moPendingModules.isEmpty()) { %>
+        <div class="card" style="padding:0;overflow:hidden;margin-bottom:20px;border-color:#fde68a;">
+          <div style="padding:14px 18px;background:#fffbeb;border-bottom:1px solid #fde68a;">
+            <span style="font-weight:600;font-size:14px;color:#92400e;">&#9203; Pending Admin Approval</span>
+            <span style="font-size:12px;color:#92400e;margin-left:8px;"><%= moPendingModules.size() %> module(s) awaiting review</span>
+          </div>
+          <div style="padding:12px 18px;">
+            <% for (Map<String,String> mod : moPendingModules) { %>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #fef3c7;">
+              <div>
+                <span style="background:#fef3c7;color:#92400e;font-size:12px;font-weight:600;padding:2px 8px;border-radius:4px;margin-right:8px;">
+                  <%= mod.get("code") %>
+                </span>
+                <span style="font-size:13px;color:#374151;"><%= mod.get("name") %></span>
+              </div>
+              <form action="${pageContext.request.contextPath}/mo/profile" method="post" style="display:inline;">
+                <input type="hidden" name="action" value="cancelModuleRequest">
+                <input type="hidden" name="courseCode" value="<%= mod.get("code") %>">
+                <button type="submit" class="btn btn-outline-red btn-sm"
+                        onclick="return confirm('Cancel request for <%= mod.get("code") %>?')">Cancel</button>
+              </form>
+            </div>
+            <% } %>
+          </div>
+        </div>
+        <% } %>
+
+        <%-- Approved modules --%>
+        <div class="card" style="padding:0;overflow:hidden;margin-bottom:20px;">
+          <div style="padding:14px 18px;border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-weight:600;font-size:14px;">Assigned Modules</span>
+            <span style="font-size:13px;color:#6b7280;"><%= moModules != null ? moModules.size() : 0 %> module(s)</span>
+          </div>
+          <% if (moModules == null || moModules.isEmpty()) { %>
+          <div style="padding:28px;text-align:center;color:#9ca3af;font-style:italic;font-size:13px;">
+            No modules assigned yet. Submit a request below.
+          </div>
+          <% } else { %>
+          <div style="padding:12px 18px;">
+            <% for (Map<String,String> mod : moModules) { %>
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f3f4f6;">
+              <span style="background:#ede9fe;color:#6d28d9;font-size:12px;font-weight:600;padding:2px 8px;border-radius:4px;">
+                <%= mod.get("code") %>
+              </span>
+              <span style="font-size:13px;color:#374151;"><%= mod.get("name") %></span>
+            </div>
+            <% } %>
+          </div>
+          <% } %>
+        </div>
+
+        <%-- Request new module --%>
+        <div class="card" style="padding:20px;">
+          <h3 class="text-lg mb-2">Request New Module</h3>
+          <p style="font-size:13px;color:#6b7280;margin-bottom:16px;">
+            Submit a request to be assigned a module. An admin will review and approve it.
+          </p>
+          <form action="${pageContext.request.contextPath}/mo/profile" method="post">
+            <input type="hidden" name="action" value="requestModule">
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label class="form-label">Course Code <span style="color:#b91c1c;">*</span></label>
+                <input class="form-input" name="courseCode" type="text"
+                       placeholder="e.g. EBU6304" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Course Name</label>
+                <input class="form-input" name="courseName" type="text"
+                       placeholder="e.g. Software Engineering">
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">Submit Request</button>
+          </form>
+        </div>
+
+      </div>
+
       <!-- Settings Tab -->
       <div id="tab-settings" class="tab-content">
         <div class="card" style="padding:20px;">
@@ -105,12 +198,19 @@
   </main>
 </div>
 <script>
+var initialTab = '<%= request.getAttribute("activeTab") != null ? request.getAttribute("activeTab") : "profile" %>';
+
 function showTab(name, btn) {
   document.querySelectorAll('.tab-content').forEach(function(el){ el.classList.remove('active'); });
   document.querySelectorAll('.tab-btn').forEach(function(el){ el.classList.remove('active'); });
   document.getElementById('tab-' + name).classList.add('active');
-  btn.classList.add('active');
+  if (btn) btn.classList.add('active');
 }
+
+window.onload = function() {
+  var btn = document.getElementById('tab-btn-' + initialTab);
+  showTab(initialTab, btn);
+};
 </script>
 </body>
 </html>
