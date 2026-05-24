@@ -37,10 +37,15 @@
                         </div>
                         <% } %>
 
-                        <form method="get" action="${pageContext.request.contextPath}/ta/jobs">
+                        <form method="get" action="${pageContext.request.contextPath}/ta/jobs" style="display:flex;gap:8px;align-items:center;">
                             <input class="search-input" type="search" name="q"
                                    placeholder="Search jobs by title or department..."
-                                   value="${param.q != null ? param.q : ''}">
+                                   value="${param.q}"
+                                   style="flex:1;">
+                            <button type="submit" class="btn btn-primary btn-sm">Search</button>
+                            <% if (request.getParameter("q") != null && !request.getParameter("q").trim().isEmpty()) { %>
+                            <a href="${pageContext.request.contextPath}/ta/jobs" class="btn btn-outline btn-sm">Clear</a>
+                            <% } %>
                         </form>
                     </div>
                 </div>
