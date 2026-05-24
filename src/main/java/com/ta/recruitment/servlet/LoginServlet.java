@@ -8,6 +8,14 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.*;
 import java.io.IOException;
 
+/**
+ * Handles user login and logout redirection.
+ *
+ * <p>GET: forwards to {@code login.jsp}, or redirects already-authenticated users to
+ * their role's home page.
+ * POST: validates credentials via {@link DataStore}, creates a session on success, or
+ * returns an error message on failure / inactive account.
+ */
 @WebServlet("/login")
 public class LoginServlet extends HttpServlet {
 
@@ -59,6 +67,14 @@ public class LoginServlet extends HttpServlet {
         }
     }
 
+    /**
+     * Redirects an authenticated user to the correct home page for their role.
+     *
+     * @param resp the HTTP response to write to
+     * @param req  the HTTP request (used to get the context path)
+     * @param role the user's role ({@code "admin"}, {@code "mo"}, or {@code "ta"})
+     * @throws IOException if the redirect fails
+     */
     private void redirectByRole(HttpServletResponse resp, HttpServletRequest req, String role)
             throws IOException {
         String ctx = req.getContextPath();

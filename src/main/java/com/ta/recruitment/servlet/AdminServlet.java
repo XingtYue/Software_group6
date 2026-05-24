@@ -8,6 +8,17 @@ import javax.servlet.http.*;
 import java.io.IOException;
 import java.util.*;
 
+/**
+ * Handles all admin portal requests under {@code /admin/*}.
+ *
+ * <p>GET routes: user dashboard, job management, job detail, application management,
+ * CV download, workload management, workload edit, profile, add-MO form, and user
+ * edit page (including per-module approval).
+ *
+ * <p>POST routes: job open/close, openings update, application accept/reject/restore,
+ * user activate/deactivate, module approve/reject (bulk and per-entry), add-MO form
+ * submission, user info / password / module edits, and workload save.
+ */
 @WebServlet("/admin/*")
 public class AdminServlet extends BaseServlet {
 
@@ -506,6 +517,13 @@ public class AdminServlet extends BaseServlet {
 
     // ---- private helpers ----
 
+    /**
+     * Converts a list of applications to enriched maps, adding TA contact info to each.
+     *
+     * @param apps the applications to convert
+     * @param ds   the data store used to look up TA details
+     * @return list of enriched application maps
+     */
     private List<Map<String,String>> enrichedAppMaps(List<Application> apps, DataStore ds) {
         List<Map<String,String>> result = new ArrayList<>();
         for (Application a : apps) {
@@ -516,22 +534,51 @@ public class AdminServlet extends BaseServlet {
         return result;
     }
 
+    /**
+     * Filters a list using the given predicate.
+     *
+     * @param <T>  element type
+     * @param list the source list
+     * @param pred the predicate to test each element
+     * @return new list containing only elements that match the predicate
+     */
     private static <T> List<T> filter(List<T> list, java.util.function.Predicate<T> pred) {
         List<T> out = new ArrayList<>();
         for (T t : list) if (pred.test(t)) out.add(t);
         return out;
     }
 
+    /**
+     * Converts a list of {@link User} objects to a list of flat string maps.
+     *
+     * @param users the users to convert
+     * @return list of maps as returned by {@link User#toMap()}
+     */
     private static List<Map<String,String>> toMaps(List<User> users) {
         List<Map<String,String>> out = new ArrayList<>();
         for (User u : users) out.add(u.toMap());
         return out;
     }
 
+    /**
+     * Parses a string to an integer, returning 0 on failure.
+     *
+     * @param s the string to parse
+     * @return the parsed integer, or 0 if parsing fails
+     */
     private static int parseInt(String s) {
         try { return Integer.parseInt(s); } catch (Exception e) { return 0; }
     }
 
+    /**
+     * Forwards the request to the given JSP path.
+     *
+     * @param req  the HTTP request
+     * @param resp the HTTP response
+     * @param jsp  the JSP path to forward to (relative to the web root)
+     * @throws ServletException if the forward fails
+     * @throws IOException      if an I/O error occurs
+     */
     private static void forward(HttpServletRequest req, HttpServletResponse resp, String jsp)
             throws ServletException, IOException {
         req.getRequestDispatcher(jsp).forward(req, resp);

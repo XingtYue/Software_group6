@@ -6,8 +6,12 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
- * Singleton data store that reads/writes JSON files for persistence.
- * All data is stored in WEB-INF/data/ directory.
+ * Singleton in-memory data store with JSON file persistence.
+ *
+ * <p>All data is loaded from {@code WEB-INF/data/} on first initialisation via
+ * {@link #init(String)} and flushed back to disk after every mutating operation.
+ * Collections are kept in memory for fast access; the class is thread-safe on
+ * write paths that are declared {@code synchronized}.
  */
 public class DataStore {
 
@@ -22,6 +26,11 @@ public class DataStore {
     private DataStore() {
     }
 
+    /**
+     * Returns the singleton instance, creating it if necessary.
+     *
+     * @return the shared {@code DataStore} instance
+     */
     public static synchronized DataStore getInstance() {
         if (instance == null) {
             instance = new DataStore();
@@ -29,6 +38,13 @@ public class DataStore {
         return instance;
     }
 
+    /**
+     * Initialises the data store with the given directory path and loads all data.
+     * Must be called once at application startup (typically from
+     * {@link com.ta.recruitment.listener.AppContextListener}).
+     *
+     * @param dataDirectory absolute path to the directory that holds the JSON data files
+     */
     public void init(String dataDirectory) {
         this.dataDir = dataDirectory;
         File dir = new File(dataDirectory);
@@ -91,14 +107,17 @@ public class DataStore {
 
     // ==================== SAVE ====================
 
+    /** Persists the current in-memory user list to {@code users.json}. */
     public synchronized void saveUsers() {
         writeFile("users.json", usersToJson());
     }
 
+    /** Persists the current in-memory job list to {@code jobs.json}. */
     public synchronized void saveJobs() {
         writeFile("jobs.json", jobsToJson());
     }
 
+    /** Persists the current in-memory application list to {@code applications.json}. */
     public synchronized void saveApplications() {
         writeFile("applications.json", applicationsToJson());
     }
@@ -114,6 +133,13 @@ public class DataStore {
 
     // ==================== USER OPERATIONS ====================
 
+    /**
+     * Looks up a user by email and password for login authentication.
+     *
+     * @param email    the login email (case-insensitive)
+     * @param password the plaintext password
+     * @return the matching {@link User}, or {@code null} if credentials are invalid
+     */
     public User findUserByEmailAndPassword(String email, String password) {
         if (email == null || password == null) return null;
         for (User u : users) {
@@ -124,6 +150,12 @@ public class DataStore {
         return null;
     }
 
+    /**
+     * Finds a user by their unique ID.
+     *
+     * @param id the user ID to search for
+     * @return the matching {@link User}, or {@code null} if not found
+     */
     public User findUserById(String id) {
         for (User u : users) {
             if (id != null && id.equals(u.getId())) return u;
@@ -131,10 +163,21 @@ public class DataStore {
         return null;
     }
 
+    /**
+     * Returns a copy of all users in the system.
+     *
+     * @return new list containing all {@link User} objects
+     */
     public List<User> getAllUsers() {
         return new ArrayList<>(users);
     }
 
+    /**
+     * Returns all users with the given role.
+     *
+     * @param role the role to filter by (e.g. {@code "ta"}, {@code "mo"}, {@code "admin"})
+     * @return list of matching users
+     */
     public List<User> getUsersByRole(String role) {
         List<User> result = new ArrayList<>();
         for (User u : users) {
@@ -143,6 +186,11 @@ public class DataStore {
         return result;
     }
 
+    /**
+     * Replaces the stored user record with the provided object and persists to disk.
+     *
+     * @param user the updated {@link User} (matched by ID)
+     */
     public void updateUser(User user) {
         for (int i = 0; i < users.size(); i++) {
             if (users.get(i).getId().equals(user.getId())) {
@@ -153,6 +201,12 @@ public class DataStore {
         saveUsers();
     }
 
+    /**
+     * Sets the account status for the given user and persists to disk.
+     *
+     * @param userId the ID of the user to update
+     * @param status the new status ({@code "active"} or {@code "inactive"})
+     */
     public void setUserStatus(String userId, String status) {
         User u = findUserById(userId);
         if (u != null) {
@@ -161,6 +215,11 @@ public class DataStore {
         }
     }
 
+    /**
+     * Returns all MO users who have at least one pending module awaiting admin approval.
+     *
+     * @return list of users with non-empty {@code pendingModules}
+     */
     public List<User> getUsersWithPendingModules() {
         List<User> result = new ArrayList<>();
         for (User u : users) {
@@ -171,6 +230,12 @@ public class DataStore {
         return result;
     }
 
+    /**
+     * Finds a user by email address (case-insensitive).
+     *
+     * @param email the email address to search for
+     * @return the matching {@link User}, or {@code null} if not found
+     */
     public User findUserByEmail(String email) {
         if (email == null) return null;
         for (User u : users) {
@@ -179,6 +244,11 @@ public class DataStore {
         return null;
     }
 
+    /**
+     * Assigns a generated ID to the user, adds them to the store, and persists to disk.
+     *
+     * @param user the new {@link User} to add (ID will be overwritten)
+     */
     public synchronized void addUser(User user) {
         user.setId("u" + generateId());
         users.add(user);
@@ -187,10 +257,20 @@ public class DataStore {
 
     // ==================== JOB OPERATIONS ====================
 
+    /**
+     * Returns a copy of all jobs regardless of status.
+     *
+     * @return new list containing all {@link Job} objects
+     */
     public List<Job> getAllJobs() {
         return new ArrayList<>(jobs);
     }
 
+    /**
+     * Returns only jobs with status {@code "active"} (visible to TAs).
+     *
+     * @return list of active {@link Job} objects
+     */
     public List<Job> getActiveJobs() {
         List<Job> result = new ArrayList<>();
         for (Job j : jobs) {
@@ -199,6 +279,12 @@ public class DataStore {
         return result;
     }
 
+    /**
+     * Returns all jobs posted by the given MO user.
+     *
+     * @param moId the MO user ID
+     * @return list of {@link Job} objects owned by this MO
+     */
     public List<Job> getJobsByMO(String moId) {
         List<Job> result = new ArrayList<>();
         for (Job j : jobs) {
@@ -207,6 +293,12 @@ public class DataStore {
         return result;
     }
 
+    /**
+     * Finds a job by its internal auto-generated ID.
+     *
+     * @param id the internal job ID
+     * @return the matching {@link Job}, or {@code null} if not found
+     */
     public Job findJobById(String id) {
         for (Job j : jobs) {
             if (id != null && id.equals(j.getId())) return j;
@@ -214,6 +306,12 @@ public class DataStore {
         return null;
     }
 
+    /**
+     * Finds a job by its public job ID (used in URLs).
+     *
+     * @param id the public job ID (e.g. {@code "3"})
+     * @return the matching {@link Job}, or {@code null} if not found
+     */
     public Job findJobByJobId(String id) {
         for (Job j : jobs) {
             if (id != null && id.equals(j.getJobId())) return j;
@@ -221,6 +319,11 @@ public class DataStore {
         return null;
     }
 
+    /**
+     * Assigns IDs, sets the posted date to today, adds the job to the store, and persists to disk.
+     *
+     * @param job the new {@link Job} to add (ID fields will be overwritten)
+     */
     public void addJob(Job job) {
         job.setId(generateId());
         job.setJobId(String.valueOf(jobs.size() + 1));
@@ -229,6 +332,11 @@ public class DataStore {
         saveJobs();
     }
 
+    /**
+     * Sets a job's status to {@code "closed"} (admin-only visibility) and persists to disk.
+     *
+     * @param jobId the public job ID to close
+     */
     public void closeJob(String jobId) {
         Job j = findJobByJobId(jobId);
         if (j != null) {
@@ -237,6 +345,11 @@ public class DataStore {
         }
     }
 
+    /**
+     * Sets a job's status back to {@code "active"} and persists to disk.
+     *
+     * @param jobId the public job ID to reactivate
+     */
     public void openJob(String jobId) {
         Job j = findJobByJobId(jobId);
         if (j != null) {
@@ -245,6 +358,12 @@ public class DataStore {
         }
     }
 
+    /**
+     * Updates the number of openings for a job and persists to disk.
+     *
+     * @param jobId    the public job ID to update
+     * @param openings the new number of openings
+     */
     public void updateJobOpenings(String jobId, int openings) {
         Job j = findJobByJobId(jobId);
         if (j != null) {
@@ -253,6 +372,12 @@ public class DataStore {
         }
     }
 
+    /**
+     * Sets a job's status to {@code "deactive"} (hidden from TAs but visible to the owner MO)
+     * and persists to disk.
+     *
+     * @param jobId the public job ID to deactivate
+     */
     public void deactivateJob(String jobId) {
         Job j = findJobByJobId(jobId);
         if (j != null) {
@@ -261,6 +386,11 @@ public class DataStore {
         }
     }
 
+    /**
+     * Permanently removes a job from the store and persists to disk.
+     *
+     * @param jobId the public job ID to delete
+     */
     public synchronized void deleteJob(String jobId) {
         jobs.removeIf(j -> j.getJobId().equals(jobId));
         saveJobs();
@@ -268,10 +398,11 @@ public class DataStore {
 
     // ==================== APPLICATION OPERATIONS ====================
     /**
-     * 校验：TA是否重复申请了同一个岗位
-     * @param taId 申请人TA的ID
-     * @param jobId 申请的岗位ID
-     * @return true=重复申请，false=未申请过
+     * Checks whether a TA has already submitted an application for a given job.
+     *
+     * @param taId  the TA user ID
+     * @param jobId the public job ID
+     * @return {@code true} if a duplicate application exists
      */
     public boolean hasDuplicateApplication(String taId, String jobId) {
         for (Application a : applications) {
@@ -284,10 +415,11 @@ public class DataStore {
     }
 
     /**
-     * 统计：TA在同一个课程下已经申请了多少个岗位
-     * @param taId 申请人TA的ID
-     * @param courseCode 课程编号
-     * @return 已申请的岗位数量
+     * Counts how many positions a TA has already applied for within the same course.
+     *
+     * @param taId       the TA user ID
+     * @param courseCode the course code to filter by
+     * @return number of existing applications in that course
      */
     public int countApplicationsInSameCourse(String taId, String courseCode) {
         int count = 0;
@@ -300,10 +432,21 @@ public class DataStore {
         return count;
     }
 
+    /**
+     * Returns a copy of all applications in the system.
+     *
+     * @return new list containing all {@link Application} objects
+     */
     public List<Application> getAllApplications() {
         return new ArrayList<>(applications);
     }
 
+    /**
+     * Returns all applications submitted by a given TA.
+     *
+     * @param taId the TA user ID
+     * @return list of the TA's applications
+     */
     public List<Application> getApplicationsByTA(String taId) {
         List<Application> result = new ArrayList<>();
         for (Application a : applications) {
@@ -312,7 +455,12 @@ public class DataStore {
         return result;
     }
 
-    // ========== 新增：获取TA所有已接受的申请 ==========
+    /**
+     * Returns all applications with status {@code "accepted"} submitted by a given TA.
+     *
+     * @param taId the TA user ID
+     * @return list of accepted applications for this TA
+     */
     public List<Application> getAcceptedApplicationsByTA(String taId) {
         List<Application> result = new ArrayList<>();
         for (Application a : applications) {
@@ -323,6 +471,12 @@ public class DataStore {
         return result;
     }
 
+    /**
+     * Returns all applications for a given job.
+     *
+     * @param jobId the public job ID
+     * @return list of applications for this job
+     */
     public List<Application> getApplicationsByJob(String jobId) {
         List<Application> result = new ArrayList<>();
         for (Application a : applications) {
@@ -331,6 +485,12 @@ public class DataStore {
         return result;
     }
 
+    /**
+     * Finds an application by its unique ID.
+     *
+     * @param id the application ID
+     * @return the matching {@link Application}, or {@code null} if not found
+     */
     public Application findApplicationById(String id) {
         for (Application a : applications) {
             if (id != null && id.equals(a.getId())) return a;
@@ -338,6 +498,13 @@ public class DataStore {
         return null;
     }
 
+    /**
+     * Returns {@code true} if the given TA already has an application for the given job.
+     *
+     * @param taId  the TA user ID
+     * @param jobId the public job ID
+     * @return {@code true} if an application exists
+     */
     public boolean hasApplied(String taId, String jobId) {
         for (Application a : applications) {
             if (taId.equals(a.getTaId()) && jobId.equals(a.getJobId())) return true;
@@ -345,6 +512,12 @@ public class DataStore {
         return false;
     }
 
+    /**
+     * Assigns a generated ID and today's date to the application, adds it to the store,
+     * and persists to disk.
+     *
+     * @param app the new {@link Application} to add (ID and date will be overwritten)
+     */
     public void addApplication(Application app) {
         app.setId(generateId());
         app.setAppliedDate(today());
@@ -352,6 +525,13 @@ public class DataStore {
         saveApplications();
     }
 
+    /**
+     * Updates an application's status, persists to disk, and triggers workload recalculation
+     * for the applicant TA.
+     *
+     * @param appId  the application ID to update
+     * @param status the new status ({@code "accepted"}, {@code "rejected"}, or {@code "pending"})
+     */
     public void updateApplicationStatus(String appId, String status) {
         Application a = findApplicationById(appId);
         if (a != null) {
@@ -361,6 +541,16 @@ public class DataStore {
         }
     }
 
+    /**
+     * Stores the AI match analysis result fields on an application and persists to disk.
+     *
+     * @param appId    the application ID to update
+     * @param score    the AI match score (0–100)
+     * @param matched  comma-separated matched skills
+     * @param missing  comma-separated missing skills
+     * @param reasoning the AI's reasoning narrative
+     * @param altJob   recommended alternative job title, or {@code ""}
+     */
     public void updateApplicationAiResult(String appId, int score, String matched, String missing,
                                           String reasoning, String altJob) {
         Application a = findApplicationById(appId);
@@ -376,7 +566,13 @@ public class DataStore {
 
     // ==================== WORKLOAD ====================
 
-    /** Recalculates workload for one TA from accepted applications and persists to users.json. */
+    /**
+     * Recalculates the total committed hours for one TA from their accepted applications
+     * and persists the updated value to {@code users.json}.
+     * Called automatically whenever an application status changes.
+     *
+     * @param taId the TA user ID whose workload should be recalculated
+     */
     private void recalcAndSaveWorkload(String taId) {
         User ta = findUserById(taId);
         if (ta == null) return;
@@ -397,6 +593,12 @@ public class DataStore {
         saveUsers();
     }
 
+    /**
+     * Returns workload summary rows for all TA users, reading committed hours directly
+     * from the cached user records (no recalculation performed here).
+     *
+     * @return list of maps with keys: {@code id, name, status, totalHours, positions}
+     */
     public List<Map<String,String>> getWorkloadData() {
         List<Map<String,String>> result = new ArrayList<>();
         List<User> allTAs = getUsersByRole("ta");
@@ -412,6 +614,12 @@ public class DataStore {
         }
         return result;
     }
+    /**
+     * Counts the number of accepted applications for a given TA.
+     *
+     * @param taId the TA user ID
+     * @return number of accepted positions
+     */
     private int countAcceptedPositions(String taId) {
         int count = 0;
         for (Application a : applications) {
@@ -836,15 +1044,32 @@ public class DataStore {
         return 1;
     }
 
+    /**
+     * Generates a unique ID using the last 6 digits of the current timestamp combined with
+     * a random 3-digit suffix.
+     *
+     * @return a short pseudo-unique ID string
+     */
     private String generateId() {
         return String.valueOf(System.currentTimeMillis()).substring(7) +
                 String.valueOf((int)(Math.random() * 1000));
     }
 
+    /**
+     * Returns today's date formatted as {@code yyyy-MM-dd}.
+     *
+     * @return today's date string
+     */
     private String today() {
         return new SimpleDateFormat("yyyy-MM-dd").format(new Date());
     }
 
+    /**
+     * Escapes a string for safe inclusion inside a JSON double-quoted value.
+     *
+     * @param s the raw string (may be {@code null})
+     * @return JSON-safe escaped string, or {@code ""} if input is {@code null}
+     */
     private String esc(String s) {
         if (s == null) return "";
         return s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "");

@@ -7,10 +7,25 @@ import javax.servlet.http.*;
 import java.io.*;
 import java.util.Map;
 
+/**
+ * Abstract base class for the role-specific servlets (TA, MO, Admin).
+ *
+ * <p>Provides shared helper methods for enriching application maps with TA
+ * contact details, serving CV files as HTTP downloads, and handling the
+ * common profile-update POST action.
+ */
 public abstract class BaseServlet extends HttpServlet {
 
     // ---------- Application enrichment ----------
 
+    /**
+     * Adds extra TA contact fields ({@code taPhone}, {@code taDepartment}) to an application map
+     * by looking up the TA user record.
+     *
+     * @param appMap the mutable application map to enrich
+     * @param taId   the TA user ID to look up
+     * @param ds     the {@link DataStore} to query
+     */
     protected void enrichAppWithTaInfo(Map<String, String> appMap, String taId, DataStore ds) {
         User ta = ds.findUserById(taId);
         appMap.put("taPhone",      ta != null && ta.getPhone()      != null ? ta.getPhone()      : "");
@@ -19,6 +34,16 @@ public abstract class BaseServlet extends HttpServlet {
 
     // ---------- CV file serving ----------
 
+    /**
+     * Streams a CV file from the uploads directory to the HTTP response.
+     * Sets {@code Content-Disposition: inline} so the browser can display PDFs inline.
+     *
+     * @param req    the HTTP request (used to resolve the upload directory)
+     * @param resp   the HTTP response to write to
+     * @param cvFile the filename of the CV (relative to the uploads directory)
+     * @param taName the TA's name, used to build the suggested download filename
+     * @throws IOException if the file cannot be read or the response cannot be written
+     */
     protected void serveCV(HttpServletRequest req, HttpServletResponse resp,
                            String cvFile, String taName) throws IOException {
         if (cvFile == null || cvFile.isEmpty()) { resp.sendError(404, "CV not found"); return; }
